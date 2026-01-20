@@ -164,8 +164,8 @@ static void HandleMotionCtrl(JSON_Context *ctx, uint8_t req_src_id, cJSON *req_p
     }
     
     bool success = false;
-    if (strcmp(action, "start") == 0) {
-        success = App_MotionStart(ctx->my_id);
+    if (strcmp(action, "play") == 0) {
+        success = App_MotionPlay(ctx->my_id);
     } else if (strcmp(action, "stop") == 0) {
         success = App_MotionStop(ctx->my_id);
     } else if (strcmp(action, "pause") == 0) {

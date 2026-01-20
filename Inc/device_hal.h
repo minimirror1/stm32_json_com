@@ -131,17 +131,17 @@ bool App_Ping(void);
 bool App_Move(uint8_t device_id);
 
 /**
- * @brief Start motion sequence
+ * @brief Play motion sequence
  * @param device_id Target device ID
  * @return true on success, false on failure
  *
  * @example
- *   bool App_MotionStart(uint8_t device_id) {
+ *   bool App_MotionPlay(uint8_t device_id) {
  *       Motion_Start(device_id);
  *       return true;
  *   }
  */
-bool App_MotionStart(uint8_t device_id);
+bool App_MotionPlay(uint8_t device_id);
 
 /**
  * @brief Stop motion sequence
