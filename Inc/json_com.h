@@ -57,7 +57,7 @@
  * Since Fragment TX needs a stable pointer to data during async transmission,
  * we need a dedicated buffer for building responses.
  */
-#define JSON_TX_BUFFER_SIZE 2048
+#define JSON_TX_BUFFER_SIZE 4096
 
 typedef struct {
     /* UART context (dependency) */

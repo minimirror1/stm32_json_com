@@ -30,7 +30,7 @@
 
 #include <stdbool.h>
 
-#define UART_BUFFER_SIZE 2048U
+#define UART_BUFFER_SIZE 4096U
 
 typedef struct {
 	uint8_t buffer[UART_BUFFER_SIZE];

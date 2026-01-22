@@ -31,7 +31,7 @@
 #define FRAG_MAX_PAYLOAD        30
 
 /** Maximum total message size (2KB - RAM constraint) */
-#define FRAG_MAX_MESSAGE_SIZE   2048
+#define FRAG_MAX_MESSAGE_SIZE   4096
 
 /** Maximum number of fragments (10KB / 30B = ~342) */
 #define FRAG_MAX_FRAGMENTS      ((FRAG_MAX_MESSAGE_SIZE + FRAG_MAX_PAYLOAD - 1) / FRAG_MAX_PAYLOAD)
