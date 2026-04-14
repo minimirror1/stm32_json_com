@@ -122,9 +122,9 @@ bool App_Ping(void) {
     return true;
 }
 
-bool App_Move(uint8_t device_id) {
+bool App_Move(uint8_t motor_id, int32_t raw_pos) {
     // 실제 모터 제어 코드
-    Motor_MoveToPosition(device_id, 100);
+    Motor_MoveToRawPosition(motor_id, raw_pos);
     return true;
 }
 

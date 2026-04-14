@@ -29,7 +29,7 @@
 #define APP_NAME_MAX_LEN      64
 #define APP_PATH_MAX_LEN      128
 #define APP_CONTENT_MAX_LEN   512
-#define APP_MAX_FILES         64    /* Maximum files returned by App_GetFiles */
+#define APP_MAX_FILES         32    /* Maximum files returned by App_GetFiles */
 #define APP_MAX_DEPTH         10    /* Maximum folder depth (0=root, 1, 2, ... 9) */
 #define APP_MAX_MOTORS        32    /* Maximum motors */
 #define APP_MOTOR_TYPE_LEN    16    /* Motor type string length */
@@ -81,8 +81,12 @@ typedef struct {
     uint8_t sub_id;                       /* Sub ID within group */
     char type[APP_MOTOR_TYPE_LEN];        /* Type: "Servo", "DC", "Stepper" */
     char status[APP_MOTOR_STATUS_LEN];    /* Status: "Normal", "Error" */
-    float position;                       /* Current position (e.g., 0~180 for servo) */
+    int32_t position;                     /* Current raw position value */
     float velocity;                       /* Current velocity */
+    float min_angle;                      /* Minimum display angle */
+    float max_angle;                      /* Maximum display angle */
+    int32_t min_raw;                      /* Minimum raw position value */
+    int32_t max_raw;                      /* Maximum raw position value */
 } AppMotorInfo;
 
 /**
@@ -94,7 +98,7 @@ typedef struct {
 typedef struct {
     uint8_t id;                           /* Motor unique ID */
     char status[APP_MOTOR_STATUS_LEN];    /* Status: "Normal", "Error" */
-    float position;                       /* Current position */
+    int32_t position;                     /* Current raw position value */
     float velocity;                       /* Current velocity */
 } AppMotorState;
 
@@ -119,16 +123,17 @@ bool App_Ping(void);
 
 /**
  * @brief Execute move command
- * @param device_id Target device ID
+ * @param motor_id Target motor ID
+ * @param raw_pos Target raw position value
  * @return true on success, false on failure
  *
  * @example
- *   bool App_Move(uint8_t device_id) {
- *       Motor_MoveToPosition(device_id, 100);
+ *   bool App_Move(uint8_t motor_id, int32_t raw_pos) {
+ *       Motor_MoveToRawPosition(motor_id, raw_pos);
  *       return true;
  *   }
  */
-bool App_Move(uint8_t device_id);
+bool App_Move(uint8_t motor_id, int32_t raw_pos);
 
 /**
  * @brief Play motion sequence
@@ -238,8 +243,12 @@ bool App_VerifyFile(const char *path, const char *content, bool *out_match);
  *           out_motors[idx].sub_id = 1;
  *           strcpy(out_motors[idx].type, "Servo");
  *           strcpy(out_motors[idx].status, "Normal");
- *           out_motors[idx].position = 90.0f;
+ *           out_motors[idx].position = 2048;
  *           out_motors[idx].velocity = 0.5f;
+ *           out_motors[idx].min_angle = 0.0f;
+ *           out_motors[idx].max_angle = 180.0f;
+ *           out_motors[idx].min_raw = 0;
+ *           out_motors[idx].max_raw = 3072;
  *           idx++;
  *       }
  *       return idx;
@@ -254,7 +263,7 @@ int App_GetMotors(AppMotorInfo *out_motors, uint16_t max_count);
  * @return Number of motors (>= 0) on success, -1 on failure
  *
  * @note This function is called periodically for state updates.
- *       Only id, status, position, and velocity are returned.
+ *       Only id, status, raw position, and velocity are returned.
  *
  * @example
  *   int App_GetMotorState(AppMotorState *out_states, uint16_t max_count) {
@@ -262,7 +271,7 @@ int App_GetMotors(AppMotorInfo *out_motors, uint16_t max_count);
  *       if (idx < max_count) {
  *           out_states[idx].id = 1;
  *           strcpy(out_states[idx].status, "Normal");
- *           out_states[idx].position = Motor_GetPosition(1);
+ *           out_states[idx].position = Motor_GetRawPosition(1);
  *           out_states[idx].velocity = Motor_GetVelocity(1);
  *           idx++;
  *       }

@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <limits.h>
 
 /* ============================================================================
  * Forward Declarations
@@ -84,6 +85,22 @@ static bool TryGetU8(cJSON *item, uint8_t *out) {
     return true;
 }
 
+static bool TryGetI32(cJSON *item, int32_t *out) {
+    double value;
+
+    if (!cJSON_IsNumber(item) || out == NULL) {
+        return false;
+    }
+
+    value = item->valuedouble;
+    if (value < (double)INT32_MIN || value > (double)INT32_MAX) {
+        return false;
+    }
+
+    *out = (int32_t)value;
+    return true;
+}
+
 static void SendError(JSON_Context *ctx, uint8_t req_src_id, const char *resp_cmd, const char *msg, bool respond) {
     if (!respond) return;
     cJSON *root = cJSON_CreateObject();
@@ -138,9 +155,31 @@ static void HandlePing(JSON_Context *ctx, uint8_t req_src_id, bool respond) {
 }
 
 static void HandleMove(JSON_Context *ctx, uint8_t req_src_id, cJSON *req_payload, bool respond) {
-    (void)req_payload;
-    
-    bool success = App_Move(ctx->my_id);
+    cJSON *motor_id_item;
+    cJSON *pos_item;
+    uint8_t motor_id = 0;
+    int32_t raw_pos = 0;
+    bool success;
+
+    if (!cJSON_IsObject(req_payload)) {
+        SendError(ctx, req_src_id, "move", "Missing or invalid payload", respond);
+        return;
+    }
+
+    motor_id_item = cJSON_GetObjectItem(req_payload, "motorId");
+    pos_item = cJSON_GetObjectItem(req_payload, "pos");
+
+    if (!TryGetU8(motor_id_item, &motor_id)) {
+        SendError(ctx, req_src_id, "move", "Missing or invalid motorId", respond);
+        return;
+    }
+
+    if (!TryGetI32(pos_item, &raw_pos)) {
+        SendError(ctx, req_src_id, "move", "Missing or invalid pos", respond);
+        return;
+    }
+
+    success = App_Move(motor_id, raw_pos);
     
     if (!success) {
         SendError(ctx, req_src_id, "move", "Not implemented", respond);
@@ -150,7 +189,8 @@ static void HandleMove(JSON_Context *ctx, uint8_t req_src_id, cJSON *req_payload
     cJSON *payload = cJSON_CreateObject();
     if (!payload) return;
     cJSON_AddStringToObject(payload, "status", "moved");
-    cJSON_AddNumberToObject(payload, "deviceId", ctx->my_id);
+    cJSON_AddNumberToObject(payload, "motorId", motor_id);
+    cJSON_AddNumberToObject(payload, "pos", raw_pos);
     SendSuccess(ctx, req_src_id, "move", payload, respond);
 }
 
@@ -326,6 +366,10 @@ static void HandleGetMotors(JSON_Context *ctx, uint8_t req_src_id, bool respond)
         cJSON_AddStringToObject(motor, "status", motors[i].status);
         cJSON_AddNumberToObject(motor, "position", motors[i].position);
         cJSON_AddNumberToObject(motor, "velocity", motors[i].velocity);
+        cJSON_AddNumberToObject(motor, "minAngle", motors[i].min_angle);
+        cJSON_AddNumberToObject(motor, "maxAngle", motors[i].max_angle);
+        cJSON_AddNumberToObject(motor, "minRaw", motors[i].min_raw);
+        cJSON_AddNumberToObject(motor, "maxRaw", motors[i].max_raw);
         
         cJSON_AddItemToArray(motors_arr, motor);
     }
