@@ -32,8 +32,25 @@
 #define APP_MAX_FILES         32    /* Maximum files returned by App_GetFiles */
 #define APP_MAX_DEPTH         10    /* Maximum folder depth (0=root, 1, 2, ... 9) */
 #define APP_MAX_MOTORS        32    /* Maximum motors */
-#define APP_MOTOR_TYPE_LEN    16    /* Motor type string length */
-#define APP_MOTOR_STATUS_LEN  16    /* Motor status string length */
+
+/*******************************************************************************
+ * Motor Enums (Binary Protocol v1.0)
+ ******************************************************************************/
+
+/** @brief Motor type enum (wire value: uint8) */
+typedef enum {
+    APP_MOTOR_TYPE_SERVO   = 0x00,
+    APP_MOTOR_TYPE_DC      = 0x01,
+    APP_MOTOR_TYPE_STEPPER = 0x02
+} AppMotorType;
+
+/** @brief Motor status enum (wire value: uint8) */
+typedef enum {
+    APP_MOTOR_STATUS_NORMAL       = 0x00,
+    APP_MOTOR_STATUS_ERROR        = 0x01,
+    APP_MOTOR_STATUS_OVERLOAD     = 0x02,
+    APP_MOTOR_STATUS_DISCONNECTED = 0x03
+} AppMotorStatus;
 
 /*******************************************************************************
  * Data Structures (Pure application data - no communication formatting)
@@ -79,8 +96,8 @@ typedef struct {
     uint8_t id;                           /* Motor unique ID */
     uint8_t group_id;                     /* Group ID (for DisplayId = GroupId-SubId) */
     uint8_t sub_id;                       /* Sub ID within group */
-    char type[APP_MOTOR_TYPE_LEN];        /* Type: "Servo", "DC", "Stepper" */
-    char status[APP_MOTOR_STATUS_LEN];    /* Status: "Normal", "Error" */
+    AppMotorType   type;                  /* Motor type (Servo/DC/Stepper) */
+    AppMotorStatus status;                /* Motor status (Normal/Error/Overload/Disconnected) */
     int32_t position;                     /* Current raw position value */
     float velocity;                       /* Current velocity */
     float min_angle;                      /* Minimum display angle */
@@ -97,7 +114,7 @@ typedef struct {
  */
 typedef struct {
     uint8_t id;                           /* Motor unique ID */
-    char status[APP_MOTOR_STATUS_LEN];    /* Status: "Normal", "Error" */
+    AppMotorStatus status;                /* Motor status (Normal/Error/Overload/Disconnected) */
     int32_t position;                     /* Current raw position value */
     float velocity;                       /* Current velocity */
 } AppMotorState;
@@ -161,6 +178,14 @@ bool App_MotionStop(uint8_t device_id);
  * @return true on success, false on failure
  */
 bool App_MotionPause(uint8_t device_id);
+
+/**
+ * @brief Seek to position in motion sequence
+ * @param device_id Target device ID
+ * @param time_ms Time offset in milliseconds
+ * @return true on success, false on failure
+ */
+bool App_MotionSeek(uint8_t device_id, uint32_t time_ms);
 
 /**
  * @brief Get file/folder list from storage
@@ -241,8 +266,8 @@ bool App_VerifyFile(const char *path, const char *content, bool *out_match);
  *           out_motors[idx].id = 1;
  *           out_motors[idx].group_id = 1;
  *           out_motors[idx].sub_id = 1;
- *           strcpy(out_motors[idx].type, "Servo");
- *           strcpy(out_motors[idx].status, "Normal");
+ *           out_motors[idx].type = APP_MOTOR_TYPE_SERVO;
+ *           out_motors[idx].status = APP_MOTOR_STATUS_NORMAL;
  *           out_motors[idx].position = 2048;
  *           out_motors[idx].velocity = 0.5f;
  *           out_motors[idx].min_angle = 0.0f;
@@ -270,7 +295,7 @@ int App_GetMotors(AppMotorInfo *out_motors, uint16_t max_count);
  *       int idx = 0;
  *       if (idx < max_count) {
  *           out_states[idx].id = 1;
- *           strcpy(out_states[idx].status, "Normal");
+ *           out_states[idx].status = Motor_HasError(1) ? APP_MOTOR_STATUS_ERROR : APP_MOTOR_STATUS_NORMAL;
  *           out_states[idx].position = Motor_GetRawPosition(1);
  *           out_states[idx].velocity = Motor_GetVelocity(1);
  *           idx++;
