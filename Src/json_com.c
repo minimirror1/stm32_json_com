@@ -334,6 +334,25 @@ static void HandleGetFiles(JSON_Context *ctx, uint8_t req_src_id, bool respond) 
     SendResponse(ctx, root);
 }
 
+static const char *MotorTypeToStr(AppMotorType type) {
+    switch (type) {
+        case APP_MOTOR_TYPE_SERVO:   return "Servo";
+        case APP_MOTOR_TYPE_DC:      return "DC";
+        case APP_MOTOR_TYPE_STEPPER: return "Stepper";
+        default:                     return "Unknown";
+    }
+}
+
+static const char *MotorStatusToStr(AppMotorStatus status) {
+    switch (status) {
+        case APP_MOTOR_STATUS_NORMAL:       return "Normal";
+        case APP_MOTOR_STATUS_ERROR:        return "Error";
+        case APP_MOTOR_STATUS_OVERLOAD:     return "Overload";
+        case APP_MOTOR_STATUS_DISCONNECTED: return "Disconnected";
+        default:                            return "Unknown";
+    }
+}
+
 static void HandleGetMotors(JSON_Context *ctx, uint8_t req_src_id, bool respond) {
     if (!respond) return;
     
@@ -362,8 +381,8 @@ static void HandleGetMotors(JSON_Context *ctx, uint8_t req_src_id, bool respond)
         cJSON_AddNumberToObject(motor, "id", motors[i].id);
         cJSON_AddNumberToObject(motor, "groupId", motors[i].group_id);
         cJSON_AddNumberToObject(motor, "subId", motors[i].sub_id);
-        cJSON_AddStringToObject(motor, "type", motors[i].type);
-        cJSON_AddStringToObject(motor, "status", motors[i].status);
+        cJSON_AddStringToObject(motor, "type", MotorTypeToStr(motors[i].type));
+        cJSON_AddStringToObject(motor, "status", MotorStatusToStr(motors[i].status));
         cJSON_AddNumberToObject(motor, "position", motors[i].position);
         cJSON_AddNumberToObject(motor, "velocity", motors[i].velocity);
         cJSON_AddNumberToObject(motor, "minAngle", motors[i].min_angle);
@@ -406,7 +425,7 @@ static void HandleGetMotorState(JSON_Context *ctx, uint8_t req_src_id, bool resp
         cJSON_AddNumberToObject(motor, "id", states[i].id);
         cJSON_AddNumberToObject(motor, "position", states[i].position);
         cJSON_AddNumberToObject(motor, "velocity", states[i].velocity);
-        cJSON_AddStringToObject(motor, "status", states[i].status);
+        cJSON_AddStringToObject(motor, "status", MotorStatusToStr(states[i].status));
         
         cJSON_AddItemToArray(motors_arr, motor);
     }
