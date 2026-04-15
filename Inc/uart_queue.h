@@ -45,7 +45,17 @@ typedef struct {
     RingBuffer rx_buffer;
     
     volatile uint8_t tx_busy;
+    volatile uint8_t rx_armed;
+    volatile uint8_t rx_restart_pending;
+    volatile uint8_t tx_restart_pending;
     uint8_t rx_byte_tmp;
+    volatile uint32_t uart_error_flags;
+    volatile uint32_t rx_overrun_count;
+    volatile uint32_t rx_frame_error_count;
+    volatile uint32_t rx_noise_error_count;
+    volatile uint32_t rx_parity_error_count;
+    volatile uint32_t rx_restart_fail_count;
+    volatile uint32_t tx_restart_fail_count;
 
     // LED Configuration
     bool enable_led;
@@ -55,8 +65,9 @@ typedef struct {
     uint16_t rx_led_pin;
 } UART_Context;
 
-void UART_Queue_Init(UART_Context *ctx, UART_HandleTypeDef *huart);
+int UART_Queue_Init(UART_Context *ctx, UART_HandleTypeDef *huart);
 void UART_ConfigLED(UART_Context *ctx, GPIO_TypeDef* tx_port, uint16_t tx_pin, GPIO_TypeDef* rx_port, uint16_t rx_pin);
+void UART_Queue_Process(UART_Context *ctx);
 
 // TX Functions
 int UART_SendByte(UART_Context *ctx, uint8_t data);

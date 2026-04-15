@@ -29,7 +29,41 @@ static UART_Context* GetContext(UART_HandleTypeDef *huart) {
     return NULL;
 }
 
-void UART_Queue_Init(UART_Context *ctx, UART_HandleTypeDef *huart) {
+static int UART_StartReceiveIT(UART_Context *ctx) {
+    if (HAL_UART_Receive_IT(ctx->huart, &ctx->rx_byte_tmp, 1) == HAL_OK) {
+        ctx->rx_armed = 1;
+        ctx->rx_restart_pending = 0;
+        return 0;
+    }
+
+    ctx->rx_armed = 0;
+    ctx->rx_restart_pending = 1;
+    ctx->rx_restart_fail_count++;
+    return -1;
+}
+
+static int UART_StartNextTxIT(UART_Context *ctx) {
+    uint8_t *pData = &ctx->tx_buffer.buffer[ctx->tx_buffer.tail];
+
+    if (HAL_UART_Transmit_IT(ctx->huart, pData, 1) == HAL_OK) {
+        ctx->tx_busy = 1;
+        ctx->tx_restart_pending = 0;
+        if (ctx->enable_led) {
+            HAL_GPIO_WritePin(ctx->tx_led_port, ctx->tx_led_pin, GPIO_PIN_SET);
+        }
+        return 0;
+    }
+
+    ctx->tx_busy = 0;
+    ctx->tx_restart_pending = 1;
+    ctx->tx_restart_fail_count++;
+    if (ctx->enable_led) {
+        HAL_GPIO_WritePin(ctx->tx_led_port, ctx->tx_led_pin, GPIO_PIN_RESET);
+    }
+    return -1;
+}
+
+int UART_Queue_Init(UART_Context *ctx, UART_HandleTypeDef *huart) {
     ctx->huart = huart;
 
     // Initialize indices
@@ -39,12 +73,21 @@ void UART_Queue_Init(UART_Context *ctx, UART_HandleTypeDef *huart) {
     ctx->rx_buffer.tail = 0;
 
     ctx->tx_busy = 0;
+    ctx->rx_armed = 0;
+    ctx->rx_restart_pending = 0;
+    ctx->tx_restart_pending = 0;
     ctx->enable_led = false;
+    ctx->uart_error_flags = HAL_UART_ERROR_NONE;
+    ctx->rx_overrun_count = 0;
+    ctx->rx_frame_error_count = 0;
+    ctx->rx_noise_error_count = 0;
+    ctx->rx_parity_error_count = 0;
+    ctx->rx_restart_fail_count = 0;
+    ctx->tx_restart_fail_count = 0;
 
     RegisterContext(ctx);
 
-    // Start Reception
-    HAL_UART_Receive_IT(ctx->huart, &ctx->rx_byte_tmp, 1);
+    return UART_StartReceiveIT(ctx);
 }
 
 void UART_ConfigLED(UART_Context *ctx, GPIO_TypeDef* tx_port, uint16_t tx_pin, GPIO_TypeDef* rx_port, uint16_t rx_pin) {
@@ -53,6 +96,17 @@ void UART_ConfigLED(UART_Context *ctx, GPIO_TypeDef* tx_port, uint16_t tx_pin, G
     ctx->tx_led_pin = tx_pin;
     ctx->rx_led_port = rx_port;
     ctx->rx_led_pin = rx_pin;
+}
+
+void UART_Queue_Process(UART_Context *ctx) {
+    if (ctx->rx_restart_pending && HAL_UART_GetState(ctx->huart) == HAL_UART_STATE_READY) {
+        (void)UART_StartReceiveIT(ctx);
+    }
+
+    if (ctx->tx_restart_pending && !ctx->tx_busy &&
+        ctx->tx_buffer.tail != ctx->tx_buffer.head) {
+        (void)UART_StartNextTxIT(ctx);
+    }
 }
 
 // --- TX Functions ---
@@ -77,14 +131,9 @@ int UART_SendByte(UART_Context *ctx, uint8_t data) {
             HAL_GPIO_WritePin(ctx->tx_led_port, ctx->tx_led_pin, GPIO_PIN_SET);
         }
 
-        uint8_t *pData = &ctx->tx_buffer.buffer[ctx->tx_buffer.tail];
         // Only transmit 1 byte at a time to simplify buffer wrapping logic
         // and let ISR handle the rest
-        if (HAL_UART_Transmit_IT(ctx->huart, pData, 1) != HAL_OK) {
-             ctx->tx_busy = 0;
-             if (ctx->enable_led) {
-                 HAL_GPIO_WritePin(ctx->tx_led_port, ctx->tx_led_pin, GPIO_PIN_RESET);
-             }
+        if (UART_StartNextTxIT(ctx) != 0) {
              return -2; // Error starting transmission
         }
     }
@@ -159,11 +208,11 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 
     if (ctx->tx_buffer.tail != ctx->tx_buffer.head) {
         // More data to send
-        uint8_t *pData = &ctx->tx_buffer.buffer[ctx->tx_buffer.tail];
-        HAL_UART_Transmit_IT(ctx->huart, pData, 1);
+        (void)UART_StartNextTxIT(ctx);
     } else {
         // No more data
         ctx->tx_busy = 0;
+        ctx->tx_restart_pending = 0;
         // Turn off TX LED if enabled
         if (ctx->enable_led) {
             HAL_GPIO_WritePin(ctx->tx_led_port, ctx->tx_led_pin, GPIO_PIN_RESET);
@@ -189,5 +238,39 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     }
 
     // Restart Reception
-    HAL_UART_Receive_IT(ctx->huart, &ctx->rx_byte_tmp, 1);
+    (void)UART_StartReceiveIT(ctx);
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
+    UART_Context *ctx = GetContext(huart);
+    if (ctx == NULL) return;
+
+    ctx->uart_error_flags |= huart->ErrorCode;
+
+    if ((huart->ErrorCode & HAL_UART_ERROR_PE) != 0U) {
+        ctx->rx_parity_error_count++;
+        __HAL_UART_CLEAR_PEFLAG(huart);
+    }
+    if ((huart->ErrorCode & HAL_UART_ERROR_FE) != 0U) {
+        ctx->rx_frame_error_count++;
+        __HAL_UART_CLEAR_FEFLAG(huart);
+    }
+    if ((huart->ErrorCode & HAL_UART_ERROR_NE) != 0U) {
+        ctx->rx_noise_error_count++;
+        __HAL_UART_CLEAR_NEFLAG(huart);
+    }
+    if ((huart->ErrorCode & HAL_UART_ERROR_ORE) != 0U) {
+        ctx->rx_overrun_count++;
+        __HAL_UART_CLEAR_OREFLAG(huart);
+        ctx->rx_armed = 0;
+        ctx->rx_restart_pending = 1;
+        return;
+    }
+
+    ctx->rx_armed = 0;
+    if (HAL_UART_GetState(huart) == HAL_UART_STATE_READY) {
+        (void)UART_StartReceiveIT(ctx);
+    } else {
+        ctx->rx_restart_pending = 1;
+    }
 }
