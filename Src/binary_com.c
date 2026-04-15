@@ -5,14 +5,14 @@
  *      Author: AI Assistant
  *
  *  Binary Communication Library (Binary Protocol v1.0)
- *  Replaces json_com.c — same Fragment Protocol / XBee API stack, binary payload.
+ *  Replaces json_com.c ??same Fragment Protocol / XBee API stack, binary payload.
  *
  *  Endianness:
  *    - Application payload (this file): Little-Endian
  *    - Fragment Protocol headers: Big-Endian (unchanged, handled by fragment_rx/tx)
  *
  *  All multi-byte values in the binary application payload use explicit
- *  read_u16le / write_u16le helpers — never rely on struct member ordering
+ *  read_u16le / write_u16le helpers ??never rely on struct member ordering
  *  or pointer casting for LE conversion.
  */
 
@@ -61,6 +61,12 @@ typedef union {
 
 static BinaryScratch_t g_binary_scratch;
 
+typedef enum {
+    BIN_SEND_OK = 0,
+    BIN_SEND_TOO_LARGE,
+    BIN_SEND_TX_BUSY
+} BinarySendStatus;
+
 /* ============================================================================
  * Little-Endian Helpers
  * ============================================================================ */
@@ -102,6 +108,19 @@ static inline uint16_t clamp_u16(int32_t v) {
     return (uint16_t)v;
 }
 
+static BinarySendStatus FinalizeBufferedResponse(BinaryContext *ctx,
+                                                 uint8_t tar_id,
+                                                 uint8_t cmd,
+                                                 BinStatus status,
+                                                 uint16_t payload_len);
+static void SendErrorForStatus(BinaryContext *ctx, uint8_t tar_id, uint8_t cmd,
+                               BinarySendStatus send_status);
+static void SendErrorResponse(BinaryContext *ctx,
+                              uint8_t tar_id,
+                              uint8_t cmd,
+                              BinErrorCode code,
+                              const char *msg);
+
 /* ============================================================================
  * Response Sending Helpers
  * ============================================================================ */
@@ -118,17 +137,17 @@ static inline uint16_t clamp_u16(int32_t v) {
  * @param payload     Pointer to payload bytes (may be NULL if payload_len==0)
  * @param payload_len Number of payload bytes
  */
-static void SendBinaryResponse(BinaryContext *ctx,
-                                uint8_t tar_id,
-                                uint8_t cmd,
-                                BinStatus status,
-                                const uint8_t *payload,
-                                uint16_t payload_len)
+static BinarySendStatus SendBinaryResponse(BinaryContext *ctx,
+                                           uint8_t tar_id,
+                                           uint8_t cmd,
+                                           BinStatus status,
+                                           const uint8_t *payload,
+                                           uint16_t payload_len)
 {
     uint32_t total = (uint32_t)BIN_RESP_HEADER_SIZE + (uint32_t)payload_len;
 
     if (total > BIN_TX_BUFFER_SIZE) {
-        return;  /* Should never happen — caller must respect limits */
+        return BIN_SEND_TOO_LARGE;
     }
 
     uint8_t *p = ctx->tx_buffer;
@@ -146,7 +165,53 @@ static void SendBinaryResponse(BinaryContext *ctx,
     }
 
     ctx->tx_buffer_len = total;
-    frag_tx_send(&ctx->frag_tx, ctx->tx_buffer, total, ctx->current_source_addr);
+    if (frag_tx_send(&ctx->frag_tx, ctx->tx_buffer, total,
+                     ctx->current_source_addr) == 0u) {
+        return BIN_SEND_TX_BUSY;
+    }
+
+    return BIN_SEND_OK;
+}
+
+static BinarySendStatus FinalizeBufferedResponse(BinaryContext *ctx,
+                                                 uint8_t tar_id,
+                                                 uint8_t cmd,
+                                                 BinStatus status,
+                                                 uint16_t payload_len)
+{
+    uint8_t *hdr = ctx->tx_buffer;
+    hdr = write_u8(hdr, ctx->my_id);
+    hdr = write_u8(hdr, tar_id);
+    hdr = write_u8(hdr, cmd);
+    hdr = write_u8(hdr, (uint8_t)status);
+    (void)write_u16le(hdr, payload_len);
+
+    ctx->tx_buffer_len = (uint32_t)BIN_RESP_HEADER_SIZE + (uint32_t)payload_len;
+    if (frag_tx_send(&ctx->frag_tx, ctx->tx_buffer, ctx->tx_buffer_len,
+                     ctx->current_source_addr) == 0u) {
+        return BIN_SEND_TX_BUSY;
+    }
+
+    return BIN_SEND_OK;
+}
+
+static void SendErrorForStatus(BinaryContext *ctx, uint8_t tar_id, uint8_t cmd,
+                               BinarySendStatus send_status)
+{
+    switch (send_status) {
+        case BIN_SEND_TOO_LARGE:
+            SendErrorResponse(ctx, tar_id, cmd, ERR_RESPONSE_TOO_LARGE,
+                              "Response too large");
+            break;
+
+        case BIN_SEND_TX_BUSY:
+            SendErrorResponse(ctx, tar_id, cmd, ERR_TX_BUSY, "TX busy");
+            break;
+
+        case BIN_SEND_OK:
+        default:
+            break;
+    }
 }
 
 /**
@@ -182,8 +247,8 @@ static void SendErrorResponse(BinaryContext *ctx,
     }
 
     uint16_t err_payload_len = (uint16_t)(2u + msg_len);
-    SendBinaryResponse(ctx, tar_id, (uint8_t)CMD_ERROR,
-                       STATUS_ERROR, err_payload, err_payload_len);
+    (void)SendBinaryResponse(ctx, tar_id, (uint8_t)CMD_ERROR,
+                             STATUS_ERROR, err_payload, err_payload_len);
 }
 
 /* ============================================================================
@@ -194,7 +259,9 @@ static void HandlePing(BinaryContext *ctx, uint8_t src_id)
 {
     bool ok = App_Ping();
     if (ok) {
-        SendBinaryResponse(ctx, src_id, (uint8_t)CMD_PONG, STATUS_OK, NULL, 0u);
+        BinarySendStatus send_status =
+            SendBinaryResponse(ctx, src_id, (uint8_t)CMD_PONG, STATUS_OK, NULL, 0u);
+        SendErrorForStatus(ctx, src_id, (uint8_t)CMD_PONG, send_status);
     } else {
         SendErrorResponse(ctx, src_id, (uint8_t)CMD_PONG, ERR_UNKNOWN, NULL);
     }
@@ -218,7 +285,9 @@ static void HandleMove(BinaryContext *ctx, uint8_t src_id,
         uint8_t *p = resp;
         p = write_u8(p, ctx->my_id);
         (void)write_u8(p, motor_id);
-        SendBinaryResponse(ctx, src_id, (uint8_t)CMD_MOVE, STATUS_OK, resp, 2u);
+        BinarySendStatus send_status =
+            SendBinaryResponse(ctx, src_id, (uint8_t)CMD_MOVE, STATUS_OK, resp, 2u);
+        SendErrorForStatus(ctx, src_id, (uint8_t)CMD_MOVE, send_status);
     } else {
         SendErrorResponse(ctx, src_id, (uint8_t)CMD_MOVE, ERR_MOTOR_NOT_FOUND, NULL);
     }
@@ -271,7 +340,9 @@ static void HandleMotionCtrl(BinaryContext *ctx, uint8_t src_id,
         uint8_t *p = resp;
         p = write_u8(p, (uint8_t)action);
         (void)write_u8(p, ctx->my_id);
-        SendBinaryResponse(ctx, src_id, (uint8_t)CMD_MOTION_CTRL, STATUS_OK, resp, 2u);
+        BinarySendStatus send_status =
+            SendBinaryResponse(ctx, src_id, (uint8_t)CMD_MOTION_CTRL, STATUS_OK, resp, 2u);
+        SendErrorForStatus(ctx, src_id, (uint8_t)CMD_MOTION_CTRL, send_status);
     } else {
         SendErrorResponse(ctx, src_id, (uint8_t)CMD_MOTION_CTRL, ERR_UNKNOWN, NULL);
     }
@@ -297,7 +368,8 @@ static void HandleGetMotors(BinaryContext *ctx, uint8_t src_id)
      */
     uint16_t payload_len = (uint16_t)(1u + (uint32_t)count * 17u);
     if ((uint32_t)BIN_RESP_HEADER_SIZE + payload_len > BIN_TX_BUFFER_SIZE) {
-        SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_MOTORS, ERR_UNKNOWN, NULL);
+        SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_MOTORS,
+                          ERR_RESPONSE_TOO_LARGE, "Response too large");
         return;
     }
 
@@ -319,17 +391,10 @@ static void HandleGetMotors(BinaryContext *ctx, uint8_t src_id)
         p = write_u16le(p, clamp_u16(motors[i].max_raw));
     }
 
-    /* Write response header at offset 0 */
-    uint8_t *hdr = ctx->tx_buffer;
-    hdr = write_u8(hdr, ctx->my_id);
-    hdr = write_u8(hdr, src_id);
-    hdr = write_u8(hdr, (uint8_t)CMD_GET_MOTORS);
-    hdr = write_u8(hdr, (uint8_t)STATUS_OK);
-    hdr = write_u16le(hdr, payload_len);
-
-    uint32_t total = (uint32_t)BIN_RESP_HEADER_SIZE + payload_len;
-    ctx->tx_buffer_len = total;
-    frag_tx_send(&ctx->frag_tx, ctx->tx_buffer, total, ctx->current_source_addr);
+    SendErrorForStatus(ctx, src_id, (uint8_t)CMD_GET_MOTORS,
+                       FinalizeBufferedResponse(ctx, src_id,
+                                                (uint8_t)CMD_GET_MOTORS,
+                                                STATUS_OK, payload_len));
 }
 
 static void HandleGetMotorState(BinaryContext *ctx, uint8_t src_id)
@@ -348,7 +413,8 @@ static void HandleGetMotorState(BinaryContext *ctx, uint8_t src_id)
      */
     uint16_t payload_len = (uint16_t)(1u + (uint32_t)count * 6u);
     if ((uint32_t)BIN_RESP_HEADER_SIZE + payload_len > BIN_TX_BUFFER_SIZE) {
-        SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_MOTOR_STATE, ERR_UNKNOWN, NULL);
+        SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_MOTOR_STATE,
+                          ERR_RESPONSE_TOO_LARGE, "Response too large");
         return;
     }
 
@@ -363,16 +429,10 @@ static void HandleGetMotorState(BinaryContext *ctx, uint8_t src_id)
         p = write_u8(p, (uint8_t)states[i].status);
     }
 
-    uint8_t *hdr = ctx->tx_buffer;
-    hdr = write_u8(hdr, ctx->my_id);
-    hdr = write_u8(hdr, src_id);
-    hdr = write_u8(hdr, (uint8_t)CMD_GET_MOTOR_STATE);
-    hdr = write_u8(hdr, (uint8_t)STATUS_OK);
-    hdr = write_u16le(hdr, payload_len);
-
-    uint32_t total = (uint32_t)BIN_RESP_HEADER_SIZE + payload_len;
-    ctx->tx_buffer_len = total;
-    frag_tx_send(&ctx->frag_tx, ctx->tx_buffer, total, ctx->current_source_addr);
+    SendErrorForStatus(ctx, src_id, (uint8_t)CMD_GET_MOTOR_STATE,
+                       FinalizeBufferedResponse(ctx, src_id,
+                                                (uint8_t)CMD_GET_MOTOR_STATE,
+                                                STATUS_OK, payload_len));
 }
 
 static void HandleGetFiles(BinaryContext *ctx, uint8_t src_id)
@@ -396,8 +456,6 @@ static void HandleGetFiles(BinaryContext *ctx, uint8_t src_id)
     uint8_t *p = ctx->tx_buffer + BIN_RESP_HEADER_SIZE;
     uint8_t *payload_start = p;
 
-    /* entry_count placeholder — fill after loop */
-    uint8_t *entry_count_ptr = p;
     p = write_u16le(p, (uint16_t)count);
 
     for (int i = 0; i < count; i++) {
@@ -405,14 +463,12 @@ static void HandleGetFiles(BinaryContext *ctx, uint8_t src_id)
         uint8_t name_len = (uint8_t)strlen(files[i].name);
         uint16_t path_len = (uint16_t)strlen(files[i].path);
 
-        /* Safety: ensure we don't overflow tx_buffer */
         ptrdiff_t used = p - ctx->tx_buffer;
         uint32_t needed = (uint32_t)used + 1u + 2u + 4u + 1u + name_len + 2u + path_len;
         if (needed > BIN_TX_BUFFER_SIZE) {
-            /* Truncate — update entry_count to actual entries written */
-            write_u16le(entry_count_ptr, (uint16_t)i);
-            count = i;
-            break;
+            SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_FILES,
+                              ERR_RESPONSE_TOO_LARGE, "Response too large");
+            return;
         }
 
         p = write_u8(p, flags);
@@ -428,16 +484,10 @@ static void HandleGetFiles(BinaryContext *ctx, uint8_t src_id)
 
     uint16_t payload_len = (uint16_t)(p - payload_start);
 
-    uint8_t *hdr = ctx->tx_buffer;
-    hdr = write_u8(hdr, ctx->my_id);
-    hdr = write_u8(hdr, src_id);
-    hdr = write_u8(hdr, (uint8_t)CMD_GET_FILES);
-    hdr = write_u8(hdr, (uint8_t)STATUS_OK);
-    hdr = write_u16le(hdr, payload_len);
-
-    uint32_t total = (uint32_t)BIN_RESP_HEADER_SIZE + payload_len;
-    ctx->tx_buffer_len = total;
-    frag_tx_send(&ctx->frag_tx, ctx->tx_buffer, total, ctx->current_source_addr);
+    SendErrorForStatus(ctx, src_id, (uint8_t)CMD_GET_FILES,
+                       FinalizeBufferedResponse(ctx, src_id,
+                                                (uint8_t)CMD_GET_FILES,
+                                                STATUS_OK, payload_len));
 }
 
 static void HandleGetFile(BinaryContext *ctx, uint8_t src_id,
@@ -478,7 +528,8 @@ static void HandleGetFile(BinaryContext *ctx, uint8_t src_id,
     uint16_t resp_payload_len = (uint16_t)(2u + path_len + 2u + content_len);
 
     if ((uint32_t)BIN_RESP_HEADER_SIZE + resp_payload_len > BIN_TX_BUFFER_SIZE) {
-        SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_FILE, ERR_UNKNOWN, NULL);
+        SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_FILE,
+                          ERR_RESPONSE_TOO_LARGE, "Response too large");
         return;
     }
 
@@ -489,16 +540,10 @@ static void HandleGetFile(BinaryContext *ctx, uint8_t src_id,
     p = write_u16le(p, content_len);
     memcpy(p, content_buf, content_len);
 
-    uint8_t *hdr = ctx->tx_buffer;
-    hdr = write_u8(hdr, ctx->my_id);
-    hdr = write_u8(hdr, src_id);
-    hdr = write_u8(hdr, (uint8_t)CMD_GET_FILE);
-    hdr = write_u8(hdr, (uint8_t)STATUS_OK);
-    hdr = write_u16le(hdr, resp_payload_len);
-
-    uint32_t total = (uint32_t)BIN_RESP_HEADER_SIZE + resp_payload_len;
-    ctx->tx_buffer_len = total;
-    frag_tx_send(&ctx->frag_tx, ctx->tx_buffer, total, ctx->current_source_addr);
+    SendErrorForStatus(ctx, src_id, (uint8_t)CMD_GET_FILE,
+                       FinalizeBufferedResponse(ctx, src_id,
+                                                (uint8_t)CMD_GET_FILE,
+                                                STATUS_OK, resp_payload_len));
 }
 
 static void HandleSaveFile(BinaryContext *ctx, uint8_t src_id,
@@ -549,7 +594,8 @@ static void HandleSaveFile(BinaryContext *ctx, uint8_t src_id,
     uint16_t resp_payload_len = (uint16_t)(2u + path_len);
 
     if ((uint32_t)BIN_RESP_HEADER_SIZE + resp_payload_len > BIN_TX_BUFFER_SIZE) {
-        SendErrorResponse(ctx, src_id, (uint8_t)CMD_SAVE_FILE, ERR_UNKNOWN, NULL);
+        SendErrorResponse(ctx, src_id, (uint8_t)CMD_SAVE_FILE,
+                          ERR_RESPONSE_TOO_LARGE, "Response too large");
         return;
     }
 
@@ -557,16 +603,10 @@ static void HandleSaveFile(BinaryContext *ctx, uint8_t src_id,
     p = write_u16le(p, path_len);
     memcpy(p, path_buf, path_len);
 
-    uint8_t *hdr = ctx->tx_buffer;
-    hdr = write_u8(hdr, ctx->my_id);
-    hdr = write_u8(hdr, src_id);
-    hdr = write_u8(hdr, (uint8_t)CMD_SAVE_FILE);
-    hdr = write_u8(hdr, (uint8_t)STATUS_OK);
-    hdr = write_u16le(hdr, resp_payload_len);
-
-    uint32_t total = (uint32_t)BIN_RESP_HEADER_SIZE + resp_payload_len;
-    ctx->tx_buffer_len = total;
-    frag_tx_send(&ctx->frag_tx, ctx->tx_buffer, total, ctx->current_source_addr);
+    SendErrorForStatus(ctx, src_id, (uint8_t)CMD_SAVE_FILE,
+                       FinalizeBufferedResponse(ctx, src_id,
+                                                (uint8_t)CMD_SAVE_FILE,
+                                                STATUS_OK, resp_payload_len));
 }
 
 static void HandleVerifyFile(BinaryContext *ctx, uint8_t src_id,
@@ -618,7 +658,8 @@ static void HandleVerifyFile(BinaryContext *ctx, uint8_t src_id,
     uint16_t resp_payload_len = (uint16_t)(2u + path_len + 1u);
 
     if ((uint32_t)BIN_RESP_HEADER_SIZE + resp_payload_len > BIN_TX_BUFFER_SIZE) {
-        SendErrorResponse(ctx, src_id, (uint8_t)CMD_VERIFY_FILE, ERR_UNKNOWN, NULL);
+        SendErrorResponse(ctx, src_id, (uint8_t)CMD_VERIFY_FILE,
+                          ERR_RESPONSE_TOO_LARGE, "Response too large");
         return;
     }
 
@@ -628,16 +669,10 @@ static void HandleVerifyFile(BinaryContext *ctx, uint8_t src_id,
     p += path_len;
     p = write_u8(p, match ? 0x01u : 0x00u);
 
-    uint8_t *hdr = ctx->tx_buffer;
-    hdr = write_u8(hdr, ctx->my_id);
-    hdr = write_u8(hdr, src_id);
-    hdr = write_u8(hdr, (uint8_t)CMD_VERIFY_FILE);
-    hdr = write_u8(hdr, (uint8_t)STATUS_OK);
-    hdr = write_u16le(hdr, resp_payload_len);
-
-    uint32_t total = (uint32_t)BIN_RESP_HEADER_SIZE + resp_payload_len;
-    ctx->tx_buffer_len = total;
-    frag_tx_send(&ctx->frag_tx, ctx->tx_buffer, total, ctx->current_source_addr);
+    SendErrorForStatus(ctx, src_id, (uint8_t)CMD_VERIFY_FILE,
+                       FinalizeBufferedResponse(ctx, src_id,
+                                                (uint8_t)CMD_VERIFY_FILE,
+                                                STATUS_OK, resp_payload_len));
 }
 
 /* ============================================================================
@@ -659,7 +694,7 @@ static void HandleBinaryPacket(BinaryContext *ctx, const uint8_t *data, uint32_t
     /* Copy header bytes to local struct (avoid unaligned access) */
     BinReqHeader hdr;
     memcpy(&hdr, data, BIN_REQ_HEADER_SIZE);
-    /* Explicitly decode LE payload_len — the packed struct may still have
+    /* Explicitly decode LE payload_len ??the packed struct may still have
        endianness issues depending on compiler/target */
     hdr.payload_len = read_u16le(data + 3u);
 
@@ -739,7 +774,7 @@ static void OnXBeeFrame(const XBeeFrame_t *frame, void *user_data)
         rf_data_len = frame->parsed.explicit_rx.rf_data_len;
         src_addr    = frame->parsed.explicit_rx.source_addr64;
     } else {
-        return;  /* TX status and other frames — no action needed */
+        return;  /* TX status and other frames ??no action needed */
     }
 
     if (rf_data == NULL || rf_data_len == 0u) {
@@ -758,7 +793,7 @@ static void OnXBeeFrame(const XBeeFrame_t *frame, void *user_data)
             frag_tx_handle_done(&ctx->frag_tx, msg_id);
         }
     } else {
-        /* Normal data fragment — pass to Fragment RX reassembler */
+        /* Normal data fragment ??pass to Fragment RX reassembler */
         frag_rx_process(&ctx->frag_rx, rf_data, rf_data_len, src_addr);
     }
 }
@@ -767,7 +802,7 @@ static void OnXBeeError(const char *error, void *user_data)
 {
     (void)error;
     (void)user_data;
-    /* Errors are silently ignored — not critical for operation */
+    /* Errors are silently ignored ??not critical for operation */
 }
 
 static void OnFragRxMessage(const uint8_t *data, uint32_t len,
@@ -856,3 +891,5 @@ bool BIN_COM_IsTxBusy(BinaryContext *ctx)
 {
     return frag_tx_is_busy(&ctx->frag_tx);
 }
+
+

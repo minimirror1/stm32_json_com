@@ -5,7 +5,7 @@
  *      Author: AI Assistant
  *
  *  Binary Communication Library (Binary Protocol v1.0)
- *  Replaces json_com.h — same Fragment Protocol / XBee API stack, binary payload.
+ *  Replaces json_com.h ??same Fragment Protocol / XBee API stack, binary payload.
  *
  *  Request Header  (5 bytes, Little-Endian):
  *    src_id(1) | tar_id(1) | cmd(1) | payload_len(2 LE)
@@ -28,7 +28,7 @@
  * Protocol Constants
  * ============================================================================ */
 
-/** @brief Protocol broadcast target ID — received by all devices */
+/** @brief Protocol broadcast target ID ??received by all devices */
 #define BINARY_BROADCAST_ID  0xFF
 
 /** @brief PC / host source ID */
@@ -41,9 +41,9 @@
 #define BIN_RESP_HEADER_SIZE  6
 
 /**
- * @brief TX buffer size — covers worst case GET_FILES response.
- *        32 entries × ~202 B/entry + 8 B header = ~6,472 B.
- *        8192 B leaves comfortable headroom.
+ * @brief TX buffer size matches the Fragment Protocol message ceiling.
+ *        Responses above 4096 B must be rejected with CMD_ERROR.
+ *        GET_FILES now returns ERR_RESPONSE_TOO_LARGE instead of truncating.
  */
 #define BIN_TX_BUFFER_SIZE   4096
 
@@ -95,18 +95,20 @@ typedef enum {
     ERR_UNKNOWN_CMD     = 0x02,
     ERR_INVALID_PARAM   = 0x03,
     ERR_FILE_NOT_FOUND  = 0x04,
-    ERR_MOTOR_NOT_FOUND = 0x05
+    ERR_MOTOR_NOT_FOUND = 0x05,
+    ERR_RESPONSE_TOO_LARGE = 0x06,
+    ERR_TX_BUSY         = 0x07
 } BinErrorCode;
 
 /* ============================================================================
  * Wire Header Structs (packed, Little-Endian multi-byte fields)
- * NOTE: Always use read_u16le() / write_u16le() for payload_len — do NOT
+ * NOTE: Always use read_u16le() / write_u16le() for payload_len ??do NOT
  *       rely on the struct layout for multi-byte fields on big-endian hosts.
  * ============================================================================ */
 
 #pragma pack(push, 1)
 
-/** @brief Request header — 5 bytes */
+/** @brief Request header ??5 bytes */
 typedef struct {
     uint8_t  src_id;
     uint8_t  tar_id;
@@ -114,7 +116,7 @@ typedef struct {
     uint16_t payload_len;   /* Little-Endian */
 } BinReqHeader;
 
-/** @brief Response header — 6 bytes */
+/** @brief Response header ??6 bytes */
 typedef struct {
     uint8_t  src_id;
     uint8_t  tar_id;
@@ -143,7 +145,7 @@ typedef struct {
     FragRxContext_t frag_rx;
     FragTxContext_t frag_tx;
 
-    /* Source address of most recently received message — used for replies */
+    /* Source address of most recently received message ??used for replies */
     uint64_t current_source_addr;
 
     /* TX buffer for building responses */
@@ -164,7 +166,7 @@ typedef struct {
 void BIN_COM_Init(BinaryContext *ctx, UART_Context *uart, uint8_t my_id);
 
 /**
- * @brief Process incoming data — call from main loop.
+ * @brief Process incoming data ??call from main loop.
  *
  * 1. Reads bytes from UART and feeds to XBee parser.
  * 2. XBee frames are forwarded to Fragment Protocol receiver.
@@ -204,3 +206,4 @@ uint16_t BIN_COM_Send(BinaryContext *ctx, const uint8_t *data, uint32_t len,
 bool BIN_COM_IsTxBusy(BinaryContext *ctx);
 
 #endif /* INC_BINARY_COM_H_ */
+
