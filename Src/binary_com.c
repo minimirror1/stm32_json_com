@@ -52,6 +52,15 @@ static void OnFragRxLog(const char *message, void *user_data);
 static void OnFragTxComplete(uint16_t msg_id, bool success, void *user_data);
 static void OnFragTxLog(const char *message, void *user_data);
 
+typedef union {
+    AppMotorInfo motors[APP_MAX_MOTORS];
+    AppMotorState states[APP_MAX_MOTORS];
+    AppFileInfo files[APP_MAX_FILES];
+    char content[APP_CONTENT_MAX_LEN];
+} BinaryScratch_t;
+
+static BinaryScratch_t g_binary_scratch;
+
 /* ============================================================================
  * Little-Endian Helpers
  * ============================================================================ */
@@ -271,7 +280,7 @@ static void HandleMotionCtrl(BinaryContext *ctx, uint8_t src_id,
 static void HandleGetMotors(BinaryContext *ctx, uint8_t src_id)
 {
     /* Static allocation prevents stack overflow (32 × sizeof(AppMotorInfo)) */
-    static AppMotorInfo motors[APP_MAX_MOTORS];
+    AppMotorInfo *motors = g_binary_scratch.motors;
 
     int count = App_GetMotors(motors, APP_MAX_MOTORS);
     if (count < 0) {
@@ -325,7 +334,7 @@ static void HandleGetMotors(BinaryContext *ctx, uint8_t src_id)
 
 static void HandleGetMotorState(BinaryContext *ctx, uint8_t src_id)
 {
-    static AppMotorState states[APP_MAX_MOTORS];
+    AppMotorState *states = g_binary_scratch.states;
 
     int count = App_GetMotorState(states, APP_MAX_MOTORS);
     if (count < 0) {
@@ -368,7 +377,7 @@ static void HandleGetMotorState(BinaryContext *ctx, uint8_t src_id)
 
 static void HandleGetFiles(BinaryContext *ctx, uint8_t src_id)
 {
-    static AppFileInfo files[APP_MAX_FILES];
+    AppFileInfo *files = g_binary_scratch.files;
 
     int count = App_GetFiles(files, APP_MAX_FILES);
     if (count < 0) {
@@ -453,7 +462,7 @@ static void HandleGetFile(BinaryContext *ctx, uint8_t src_id,
     memcpy(path_buf, payload + 2u, path_len);
     path_buf[path_len] = '\0';
 
-    static char content_buf[APP_CONTENT_MAX_LEN];
+    char *content_buf = g_binary_scratch.content;
     bool ok = App_GetFile(path_buf, content_buf, APP_CONTENT_MAX_LEN);
     if (!ok) {
         SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_FILE, ERR_FILE_NOT_FOUND, NULL);
@@ -526,7 +535,7 @@ static void HandleSaveFile(BinaryContext *ctx, uint8_t src_id,
         return;
     }
 
-    static char content_buf[APP_CONTENT_MAX_LEN];
+    char *content_buf = g_binary_scratch.content;
     memcpy(content_buf, content_ptr, content_len);
     content_buf[content_len] = '\0';
 
@@ -594,7 +603,7 @@ static void HandleVerifyFile(BinaryContext *ctx, uint8_t src_id,
         return;
     }
 
-    static char content_buf[APP_CONTENT_MAX_LEN];
+    char *content_buf = g_binary_scratch.content;
     memcpy(content_buf, content_ptr, content_len);
     content_buf[content_len] = '\0';
 

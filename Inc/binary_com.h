@@ -45,7 +45,7 @@
  *        32 entries × ~202 B/entry + 8 B header = ~6,472 B.
  *        8192 B leaves comfortable headroom.
  */
-#define BIN_TX_BUFFER_SIZE   8192
+#define BIN_TX_BUFFER_SIZE   4096
 
 /* ============================================================================
  * Command Enum  (cmd field, uint8)
