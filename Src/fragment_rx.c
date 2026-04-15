@@ -180,6 +180,8 @@ static void complete_message(FragRxContext_t* ctx, RxSession_t* session) {
  */
 static void process_data_fragment(FragRxContext_t* ctx, const uint8_t* data, 
                                    uint16_t len, uint64_t source_addr) {
+    uint16_t actual_payload_len;
+
     /* Minimum size: header + CRC */
     if (len < FRAG_HEADER_SIZE + FRAG_CRC_SIZE) {
         if (ctx->on_log) {
@@ -210,6 +212,8 @@ static void process_data_fragment(FragRxContext_t* ctx, const uint8_t* data,
         }
         return;
     }
+
+    actual_payload_len = (uint16_t)(len - FRAG_HEADER_SIZE - FRAG_CRC_SIZE);
     
     if (header.total_len > FRAG_MAX_MESSAGE_SIZE) {
         if (ctx->on_log) {
@@ -217,15 +221,40 @@ static void process_data_fragment(FragRxContext_t* ctx, const uint8_t* data,
         }
         return;
     }
-    
-    if (header.frag_idx >= header.frag_cnt) {
+
+    if (header.payload_len > actual_payload_len || header.payload_len > FRAG_MAX_PAYLOAD) {
         if (ctx->on_log) {
-            ctx->on_log("Invalid fragment index", ctx->callback_user_data);
+            ctx->on_log("Invalid payload length", ctx->callback_user_data);
+        }
+        return;
+    }
+
+    if (header.frag_cnt == 0 || header.frag_cnt > FRAG_MAX_FRAGMENTS) {
+        if (ctx->on_log) {
+            ctx->on_log("Invalid fragment count", ctx->callback_user_data);
         }
         return;
     }
     
-    /* Get or create session */
+    if (header.frag_idx >= header.frag_cnt || header.frag_idx >= FRAG_MAX_FRAGMENTS) {
+        if (ctx->on_log) {
+            ctx->on_log("Fragment index out of range", ctx->callback_user_data);
+        }
+        return;
+    }
+    
+    /* Store fragment payload */
+    uint32_t offset = (uint32_t)header.frag_idx * FRAG_MAX_PAYLOAD;
+    if (offset > header.total_len ||
+        offset + header.payload_len > header.total_len ||
+        offset + header.payload_len > FRAG_MAX_MESSAGE_SIZE) {
+        if (ctx->on_log) {
+            ctx->on_log("Fragment exceeds declared total length", ctx->callback_user_data);
+        }
+        return;
+    }
+
+    /* Get or create session after validating fragment boundaries */
     RxSession_t* session = get_or_create_session(ctx, header.msg_id, 
                                                   header.total_len, header.frag_cnt,
                                                   source_addr);
@@ -241,14 +270,10 @@ static void process_data_fragment(FragRxContext_t* ctx, const uint8_t* data,
         /* Already received, ignore duplicate */
         return;
     }
-    
-    /* Store fragment payload */
-    uint32_t offset = (uint32_t)header.frag_idx * FRAG_MAX_PAYLOAD;
-    if (offset + header.payload_len <= FRAG_MAX_MESSAGE_SIZE) {
-        memcpy(&session->payload_buffer[offset], &data[FRAG_HEADER_SIZE], header.payload_len);
-        frag_bitmap_set(session->received_bitmap, header.frag_idx);
-        session->last_activity_tick = HAL_GetTick();
-    }
+
+    memcpy(&session->payload_buffer[offset], &data[FRAG_HEADER_SIZE], header.payload_len);
+    frag_bitmap_set(session->received_bitmap, header.frag_idx);
+    session->last_activity_tick = HAL_GetTick();
     
     /* Check if complete */
     if (is_complete(session)) {
