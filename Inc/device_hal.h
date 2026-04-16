@@ -29,7 +29,7 @@
 #define APP_NAME_MAX_LEN      64
 #define APP_PATH_MAX_LEN      128
 #define APP_CONTENT_MAX_LEN   512
-#define APP_MAX_FILES         32    /* Maximum files returned by App_GetFiles */
+#define APP_MAX_FILES         64    /* Maximum files returned by App_GetFiles */
 #define APP_MAX_DEPTH         10    /* Maximum folder depth (0=root, 1, 2, ... 9) */
 #define APP_MAX_MOTORS        32    /* Maximum motors */
 
