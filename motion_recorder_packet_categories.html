@@ -1,0 +1,1440 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.wrap{padding:0.5rem 0 1rem;--doc-bg-primary:var(--color-background-primary,#ffffff);--doc-bg-secondary:var(--color-background-secondary,#f6f8fb);--doc-border-tertiary:var(--color-border-tertiary,#d6dde8);--doc-text-primary:var(--color-text-primary,#101828);--doc-text-secondary:var(--color-text-secondary,#475467);--doc-text-tertiary:var(--color-text-tertiary,#667085);--doc-text-info:var(--color-text-info,#175cd3);--doc-text-success:var(--color-text-success,#027a48);--doc-text-warning:var(--color-text-warning,#b54708);--doc-text-danger:var(--color-text-danger,#b42318);--doc-bg-info:var(--color-background-info,#eaf2ff);--doc-bg-success:var(--color-background-success,#ecfdf3);--doc-bg-warning:var(--color-background-warning,#fffaeb);--doc-bg-danger:var(--color-background-danger,#fef3f2);--doc-divider:var(--color-text-tertiary,#98a2b3);--doc-font-mono:var(--font-mono,Consolas,'Courier New',monospace);color:var(--doc-text-primary);background:var(--doc-bg-primary)}
+.tabs{display:flex;gap:4px;border-bottom:0.5px solid var(--doc-border-tertiary);margin-bottom:1.25rem}
+.tab{padding:7px 14px;font-size:13px;cursor:pointer;border:none;border-bottom:2px solid transparent;color:var(--doc-text-secondary);background:none;transition:color .15s}
+.tab.active{border-bottom-color:var(--doc-text-primary);color:var(--doc-text-primary);font-weight:500}
+.panel{display:none}.panel.active{display:block}
+.group{margin-bottom:1.25rem}
+.group + .group{margin-top:1.5rem;padding-top:1rem;background-image:linear-gradient(to right,var(--doc-border-tertiary),var(--doc-border-tertiary));background-repeat:no-repeat;background-size:100% 1px;background-position:0 0}
+.group-title{font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--doc-text-tertiary);margin-bottom:.625rem}
+.pkt{border:0.5px solid var(--doc-border-tertiary);border-radius:8px;padding:.75rem 1rem;margin-bottom:.5rem;background:var(--doc-bg-primary)}
+.pkt + .pkt{margin-top:1rem;padding-top:.7rem;background-image:linear-gradient(to right,var(--doc-border-tertiary),var(--doc-border-tertiary));background-repeat:no-repeat;background-size:100% 1px;background-position:0 0}
+.pkt-top{display:flex;align-items:center;gap:8px;margin-bottom:.375rem}
+.pkt-name{font-size:13px;font-weight:500;color:var(--doc-text-primary)}
+.pkt-desc{font-size:12px;color:var(--doc-text-secondary);line-height:1.55}
+.pkt-detail{font-size:12px;color:var(--doc-text-tertiary);margin-top:.3rem;line-height:1.5}
+.badge{font-size:11px;padding:2px 7px;border-radius:4px;font-weight:500;white-space:nowrap}
+.badge-link{border:none;cursor:pointer}
+.badge-link:hover{filter:brightness(.96)}
+.b-cmd{background:var(--doc-bg-info);color:var(--doc-text-info)}
+.b-rsp{background:var(--doc-bg-success);color:var(--doc-text-success)}
+.b-evt{background:var(--doc-bg-warning);color:var(--doc-text-warning)}
+.b-rw{background:var(--doc-bg-danger);color:var(--doc-text-danger)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:1.25rem}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--doc-text-secondary)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{padding:5px 8px;text-align:left;font-size:11px;font-weight:500;color:var(--doc-text-secondary);background:var(--doc-bg-secondary);border-bottom:0.5px solid var(--doc-border-tertiary)}
+td{padding:6px 8px;border-bottom:0.5px solid var(--doc-border-tertiary);color:var(--doc-text-primary);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr.summary-break td{padding-top:.85rem;background-image:linear-gradient(to right,var(--doc-border-tertiary),var(--doc-border-tertiary));background-repeat:no-repeat;background-size:100% 1px;background-position:0 0}
+.mono{font-family:var(--doc-font-mono);font-size:11px;background:var(--doc-bg-secondary);padding:1px 5px;border-radius:3px}
+.tag{display:inline-block;font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px}
+.tag-opt{background:var(--doc-bg-secondary);color:var(--doc-text-tertiary)}
+.section-note{font-size:12px;color:var(--doc-text-secondary);background:var(--doc-bg-secondary);border-radius:6px;padding:.625rem .875rem;margin-bottom:1rem;line-height:1.6}
+.pkt-link,.table-link{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer;text-align:left}
+.pkt-link{text-decoration:underline;text-decoration-color:var(--doc-border-tertiary);text-underline-offset:2px}
+.pkt-link:hover,.table-link:hover{color:var(--doc-text-info)}
+.command-list{display:grid;grid-template-columns:1fr;gap:.75rem;margin-bottom:1rem}
+.command-linkcard{border:0.5px solid var(--doc-border-tertiary);border-radius:10px;background:var(--doc-bg-primary);padding:.9rem 1rem}
+.command-linkbtn{display:block;width:100%;background:none;border:none;padding:0;text-align:left;cursor:pointer}
+.command-linktitle{font-size:14px;font-weight:600;color:var(--doc-text-primary);margin-bottom:.3rem}
+.command-linkdesc{font-size:12px;color:var(--doc-text-secondary);line-height:1.6}
+.function-card{border:0.5px solid var(--doc-border-tertiary);border-radius:10px;padding:1rem;background:var(--doc-bg-primary);margin-bottom:.75rem}
+.function-card + .function-card{margin-top:1.5rem;padding-top:1rem;background-image:linear-gradient(to right,var(--doc-border-tertiary),var(--doc-border-tertiary));background-repeat:no-repeat;background-size:100% 1px;background-position:0 0}
+.function-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:.75rem}
+.function-title{font-size:15px;font-weight:600;color:var(--doc-text-primary)}
+.command-app-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-.2rem 0 .75rem}
+.command-app-links-label{font-size:12px;color:var(--doc-text-tertiary)}
+.command-app-link{font:inherit;font-size:12px;color:var(--doc-text-info);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;text-decoration-color:var(--doc-border-tertiary);text-underline-offset:2px}
+.command-app-link:hover{color:var(--doc-text-primary)}
+.function-sub{font-size:12px;color:var(--doc-text-secondary);line-height:1.6;margin-bottom:.875rem}
+.function-grid{display:grid;grid-template-columns:1fr;gap:.85rem}
+.function-block{background:var(--doc-bg-secondary);border-radius:8px;padding:.75rem .875rem}
+.function-block h4{font-size:12px;font-weight:600;color:var(--doc-text-primary);margin-bottom:.45rem}
+.function-block p,.function-block li{font-size:12px;color:var(--doc-text-secondary);line-height:1.65}
+.function-block ul{margin:0;padding-left:1rem}
+.function-block pre{margin-top:.55rem;background:var(--doc-bg-primary);border:0.5px solid var(--doc-border-tertiary);border-radius:6px;padding:.65rem .75rem;overflow:auto;font-family:var(--doc-font-mono);font-size:11px;color:var(--doc-text-primary);line-height:1.6}
+.function-block code{font-family:var(--doc-font-mono);font-size:11px}
+.function-block pre.syntax-ready{background:#16181d;border-color:#2a2f39;color:#e7edf5}
+.function-block pre.syntax-ready code{color:inherit}
+.tok-comment{color:#7f8b99}
+.tok-keyword{color:#ff7ab6}
+.tok-type{color:#82cfff}
+.tok-func{color:#78dce8}
+.tok-const{color:#ffd866}
+.tok-number{color:#ab9df2}
+.tok-string{color:#a9dc76}
+.function-block-wide{grid-column:1/-1}
+.byte-table{width:100%;border-collapse:collapse;margin-top:.5rem}
+.byte-table th,.byte-table td{padding:5px 6px;font-size:11px}
+@media (min-width: 760px){
+  .function-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .command-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (min-width: 1200px){
+  .function-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .command-list{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+</style>
+
+<div class="wrap">
+<div class="tabs">
+  <button class="tab active" data-tab="motion" onclick="switchTab('motion')">모션 제어</button>
+  <button class="tab" data-tab="setting" onclick="switchTab('setting')">파일 읽기/쓰기</button>
+  <button class="tab" data-tab="system" onclick="switchTab('system')">시스템</button>
+  <button class="tab" data-tab="commands" onclick="switchTab('commands')">명령어 일람</button>
+  <button class="tab" data-tab="functions" onclick="switchTab('functions')">전체 함수</button>
+  <button class="tab" data-tab="summary" onclick="switchTab('summary')">전체 요약</button>
+</div>
+
+<!-- 모션 제어 -->
+<div class="panel active" id="panel-motion">
+  <div class="legend">
+    <div class="legend-item"><span class="badge b-cmd">PC→MCU 명령</span></div>
+    <div class="legend-item"><span class="badge b-rsp">MCU→PC 응답</span></div>
+    <div class="legend-item"><span class="badge b-evt">MCU→PC 이벤트(자동)</span></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">재생 제어</div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><button type="button" class="pkt-name pkt-link" onclick="openFunctionDoc('functions-app-motion-play')">모션 재생 (PLAY)</button></div>
+      <div class="pkt-desc">Media 폴더의 특정 모션 파일 재생 요청. <button type="button" class="pkt-link" onclick="openFunctionDoc('functions-app-get-file')">MT_RP</button>(반복재생), <button type="button" class="pkt-link" onclick="openFunctionDoc('functions-app-get-file')">MT_CT</button>(반복횟수) 설정값과 연계됨.</div>
+      <div class="pkt-detail">실제 구현 기준 요약 → <span class="mono">CMD_MOTION_CTRL(0x04)</span> 요청 안에 <span class="mono">PLAY action(0x00)</span> 1바이트만 payload로 전달됨. 전체 요청 예: <span class="mono">00 01 04 01 00 00</span></div>
+      <div class="pkt-detail">확장 기획 메모 → 모션 파일 인덱스/파일명, 반복 횟수 오버라이드 여부</div>
+    </div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><button type="button" class="pkt-name pkt-link" onclick="openFunctionDoc('functions-app-motion-stop')">모션 정지 (STOP)</button></div>
+      <div class="pkt-desc">현재 재생 중인 모션 즉시 정지.</div>
+    </div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><button type="button" class="pkt-name pkt-link" onclick="openFunctionDoc('functions-app-motion-pause')">모션 일시정지 / 재개 (PAUSE / RESUME)</button></div>
+      <div class="pkt-desc">재생 중 일시정지 및 재개 토글 or 명시적 구분.</div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">재생 상태 — MCU가 PC에 주기적으로 또는 변화 시 전송</div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-evt">MCU→PC 이벤트</span><span class="pkt-name">모션 재생 상태 (PLAY STATUS)</span></div>
+      <div class="pkt-desc">현재 재생 상태를 PC UI에 표시하기 위한 패킷. 상태 변화 시 또는 주기적으로 전송.</div>
+      <div class="pkt-detail">포함 데이터 → 현재 상태(재생중/정지/일시정지/초기화중), 현재 재생 파일 인덱스, 현재 반복 횟수/남은 횟수, 진행률(%)</div>
+    </div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-evt">MCU→PC 이벤트</span><span class="pkt-name">모션 재생 완료 (PLAY DONE)</span></div>
+      <div class="pkt-desc">모션 1회 재생이 완료됐을 때 전송. 반복 재생 중이면 반복 카운트 포함.</div>
+      <div class="pkt-detail">포함 데이터 → 완료된 파일 인덱스, 완료된 반복 횟수, 남은 반복 횟수</div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">초기화 상태 — 부팅 시 MCU 초기화 과정 모니터링</div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-evt">MCU→PC 이벤트</span><span class="pkt-name">초기화 진행 상태 (INIT STATUS)</span></div>
+      <div class="pkt-desc"><button type="button" class="pkt-link" onclick="openFunctionDoc('functions-app-get-file')">MT_ST</button>의 초기화 단계(센서 찍기, 초기위치 이동 등) 진행 상황. <button type="button" class="pkt-link" onclick="openFunctionDoc('functions-app-get-file')">Log/BOOT.TXT</button>에 기록되는 부팅 패킷과 연계됨.</div>
+      <div class="pkt-detail">포함 데이터 → 초기화 단계(1~4단계), 현재 처리 중인 모터 ID.SUB_id, 성공/실패 여부</div>
+    </div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-evt">MCU→PC 이벤트</span><span class="pkt-name">센서 감지 이벤트 (SENSOR EVENT)</span></div>
+      <div class="pkt-desc"><button type="button" class="pkt-link" onclick="openFunctionDoc('functions-app-get-file')">Log/SENSOR.TXT</button>에 기록되는 센서 감지 패킷. <button type="button" class="pkt-link" onclick="openFunctionDoc('functions-app-get-file')">MT_AT</button>의 absolute_data=0인 모터 대상.</div>
+      <div class="pkt-detail">포함 데이터 → 감지된 모터 ID.SUB_id, 감지 방향(CW/CCW), 감지 값</div>
+    </div>
+  </div>
+</div>
+
+<!-- 파일 읽기/쓰기 -->
+<div class="panel" id="panel-setting">
+  <div class="section-note">
+    SD카드 Setting 폴더의 파일들을 PC에서 원격으로 읽고 쓰는 패킷들입니다.<br>
+    파일별로 읽기/쓰기 패킷을 분리하거나, 파일 ID를 페이로드에 포함해 하나의 읽기/쓰기 패킷으로 통합하는 두 가지 방식이 가능합니다.
+  </div>
+
+  <div class="group">
+    <div class="group-title">단순값 설정 파일 (읽기 + 쓰기)</div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><span class="pkt-name">Discovery ID 읽기/쓰기 (DI_ID)</span></div>
+      <div class="pkt-desc">녹화기 자체 ID 조회 및 변경. Setting/DI_ID.TXT (단일 정수값).</div>
+      <div class="pkt-detail">읽기 응답 데이터 → DI_ID 값 (정수)<br>쓰기 데이터 → 변경할 DI_ID 값</div>
+    </div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><span class="pkt-name">반복 재생 ON/OFF 읽기/쓰기 (MT_RP)</span></div>
+      <div class="pkt-desc">초기화 후 자동 반복재생 여부. Setting/MT_RP.TXT (0 또는 1).</div>
+      <div class="pkt-detail">값 → 0: 반복 안 함, 1: 반복 실행</div>
+    </div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><span class="pkt-name">반복 횟수 읽기/쓰기 (MT_CT)</span></div>
+      <div class="pkt-desc">모션 반복재생 빈도. Setting/MT_CT.TXT (정수).</div>
+    </div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><span class="pkt-name">Master/Slave 모드 읽기/쓰기 (MT_MS)</span></div>
+      <div class="pkt-desc">멀티 녹화기 구성 시 역할 설정. Setting/MT_MS.TXT (MASTER / SLAVER 문자열).</div>
+    </div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><span class="pkt-name">리셋 타이머 읽기/쓰기 (RE_TI)</span></div>
+      <div class="pkt-desc">자동 리셋까지의 시간(초). Setting/RE_TI.TXT. 0이면 리셋 안 함.</div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">모터별 설정 파일 (ID.SUB_id 지정 필요)</div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><span class="pkt-name">모터 설정 읽기/쓰기 (MT_ST)</span></div>
+      <div class="pkt-desc">모터 타입(RC/AC/BLDC)별 초기화 파라미터 전체. Setting/MT_ST.TXT.<br>타입별 구조가 다르므로 타입 구분 필요.</div>
+      <div class="pkt-detail">RC: 타입, ID.SUB_id<br>AC: 타입, ID.SUB_id, 센서방향, 각도, 초기위치, 감속기, 순위<br>BLDC: 타입, ID.SUB_id, 센서방향, 각도, 초기위치, 감속기, 한바퀴카운트, RPM, 순위</div>
+    </div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><span class="pkt-name">소프트 리밋 읽기/쓰기 (MT_LI)</span></div>
+      <div class="pkt-desc">모터별 소프트웨어 동작 범위 제한. Setting/MT_LI.TXT.<br>구조: ID.SUB_id, MIN(0~4095), MAX(0~4095)</div>
+    </div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><span class="pkt-name">앱솔루트 모드 읽기/쓰기 (MT_AT)</span></div>
+      <div class="pkt-desc">앱솔루트 동작 모터 목록과 absolute_data. Setting/MT_AT.TXT.<br>구조: ID.SUB_id, absolute_data (0이면 센서 찍기 수행)</div>
+    </div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><span class="pkt-name">모터 링크 읽기/쓰기 (MT_LK)</span></div>
+      <div class="pkt-desc">두 모터축을 소프트웨어적으로 결합. Setting/MT_LK.TXT.<br>구조: ID.SUB_id1, offset1, ID.SUB_id2, offset2</div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">Midi 설정 파일</div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><span class="pkt-name">모터 Midi 설정 읽기/쓰기 (Midi/motor)</span></div>
+      <div class="pkt-desc">모터 ID별 별칭(NickName, 8자 이내), 슬라이더 범위(Range), 최소/최대값(LowData/HighData).<br>파일명 구조: {보드ID}-{모터ID}.ini</div>
+      <div class="pkt-detail">포함 데이터 → 보드ID, 모터ID, NickName(8자), Range(0~4095), LowData(0~4095), HighData(0~4095)</div>
+    </div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><span class="pkt-name">Midi 페이지 읽기/쓰기 (Midi/page)</span></div>
+      <div class="pkt-desc">페이지별 CAN ID 목록(최대 8개/페이지), LastPage 정보. Midi/page/data.ini.</div>
+      <div class="pkt-detail">포함 데이터 → 페이지 수(cnt), 각 페이지의 ID 배열, LastPage 매핑(CAN ID → 최근 페이지)</div>
+    </div>
+  </div>
+</div>
+
+<!-- 시스템 -->
+<div class="panel" id="panel-system">
+  <div class="group">
+    <div class="group-title">연결 및 장치 확인</div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><span class="pkt-name">장치 발견 / Ping (DISCOVERY)</span></div>
+      <div class="pkt-desc">PC가 Zigbee 네트워크에서 MCU를 찾기 위한 브로드캐스트 또는 단일 요청. DI_ID 기반으로 장치를 식별.</div>
+      <div class="pkt-detail">응답 데이터 → DI_ID, 펌웨어 버전, MCU 현재 상태, Master/Slave 역할</div>
+    </div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-rsp">MCU→PC 응답</span><span class="pkt-name">장치 정보 응답 (DEVICE INFO)</span></div>
+      <div class="pkt-desc">DISCOVERY 요청에 대한 응답. 처음 연결 시 PC가 MCU 전체 구성을 파악하는 데 사용.</div>
+      <div class="pkt-detail">포함 데이터 → DI_ID, FW 버전, 현재 상태, MS 역할, 연결된 모터 수</div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">MCU 제어</div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><span class="pkt-name">MCU 리셋 명령 (RESET)</span></div>
+      <div class="pkt-desc">원격으로 MCU를 소프트 리셋. RE_TI 설정과 별개로 즉시 리셋 또는 예약 리셋 가능.</div>
+    </div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><span class="pkt-name">초기화 재실행 명령 (RE-INIT)</span></div>
+      <div class="pkt-desc">MT_ST의 초기화 시퀀스(센서 찍기 → 초기위치 이동)를 리셋 없이 재실행 요청.</div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">오류 및 로그</div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-evt">MCU→PC 이벤트</span><span class="pkt-name">에러 발생 알림 (ERROR EVENT)</span></div>
+      <div class="pkt-desc">Log 폴더에 기록되는 에러 상태를 실시간으로 PC에 전달. 모터 통신 오류, 센서 실패, SD카드 오류 등.</div>
+      <div class="pkt-detail">포함 데이터 → 에러 코드, 에러 발생 모터 ID.SUB_id (해당 시), 에러 메시지</div>
+    </div>
+    <div class="pkt">
+      <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><span class="pkt-name">로그 읽기 요청 (LOG READ)</span></div>
+      <div class="pkt-desc">Log/BOOT.TXT, Log/SENSOR.TXT 내용을 PC로 전송 요청.</div>
+      <div class="pkt-detail">요청 데이터 → 로그 종류(BOOT / SENSOR), 읽을 라인 수 또는 전체</div>
+    </div>
+  </div>
+</div>
+
+<!-- 명령어 일람 -->
+<div class="panel" id="panel-commands">
+  <div class="section-note">
+    이 탭은 실제 wire command를 빠르게 훑어보는 명령 목록과 선택된 명령 상세를 함께 보여줍니다.<br>
+    현재는 <strong>CMD_MOTION_CTRL / CMD_PING / CMD_GET_FILE / CMD_SAVE_FILE / CMD_VERIFY_FILE</strong>를 먼저 정리했고,
+    이후 다른 cmd도 같은 방식으로 순차 추가하면 됩니다.
+  </div>
+
+  <div class="group">
+    <div class="group-title">명령 목록</div>
+    <div class="command-list">
+      <div class="command-linkcard">
+        <button type="button" class="command-linkbtn" onclick="openCommandDoc('commands-motion-ctrl-detail')">
+          <div class="command-linktitle">CMD_MOTION_CTRL</div>
+          <div class="command-linkdesc">
+            <span class="mono">cmd = 0x04</span> 이며 <span class="mono">payload[0]</span> 값으로
+            PLAY / STOP / PAUSE / SEEK 를 구분하는 모션 제어 계열 명령입니다.
+          </div>
+        </button>
+      </div>
+
+      <div class="command-linkcard">
+        <button type="button" class="command-linkbtn" onclick="openCommandDoc('commands-ping-detail')">
+          <div class="command-linktitle">CMD_PING</div>
+          <div class="command-linkdesc">
+            <span class="mono">cmd = 0x01</span> 이며 payload 없이 장치 생존 여부를 확인합니다.
+            성공 시 <span class="mono">CMD_PONG(0x02)</span> 응답을 돌려줍니다.
+          </div>
+        </button>
+      </div>
+
+      <div class="command-linkcard">
+        <button type="button" class="command-linkbtn" onclick="openCommandDoc('commands-get-file-detail')">
+          <div class="command-linktitle">CMD_GET_FILE</div>
+          <div class="command-linkdesc">
+            <span class="mono">cmd = 0x21</span> 이며 path 문자열로 설정/Midi/로그 파일 내용을 읽습니다.
+          </div>
+        </button>
+      </div>
+
+      <div class="command-linkcard">
+        <button type="button" class="command-linkbtn" onclick="openCommandDoc('commands-save-file-detail')">
+          <div class="command-linktitle">CMD_SAVE_FILE</div>
+          <div class="command-linkdesc">
+            <span class="mono">cmd = 0x22</span> 이며 path와 content를 함께 보내 설정/Midi 파일을 저장합니다.
+          </div>
+        </button>
+      </div>
+
+      <div class="command-linkcard">
+        <button type="button" class="command-linkbtn" onclick="openCommandDoc('commands-verify-file-detail')">
+          <div class="command-linktitle">CMD_VERIFY_FILE</div>
+          <div class="command-linkdesc">
+            <span class="mono">cmd = 0x23</span> 이며 저장된 파일 내용이 기대값과 일치하는지 검증합니다.
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">선택된 명령 상세</div>
+    <section class="function-card" id="commands-motion-ctrl-detail">
+      <div class="function-head">
+        <span class="badge b-cmd">PC→MCU 명령</span>
+        <span class="badge b-rw">cmd = 0x04</span>
+        <span class="function-title">CMD_MOTION_CTRL</span>
+      </div>
+      <div class="command-app-links">
+        <span class="command-app-links-label">사용 app 함수:</span>
+        <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-motion-play')">App_MotionPlay</button>
+        <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-motion-stop')">App_MotionStop</button>
+        <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-motion-pause')">App_MotionPause</button>
+        <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-motion-seek')">App_MotionSeek</button>
+      </div>
+      <div class="function-sub">
+        <span class="mono">CMD_MOTION_CTRL</span>는 모션 관련 제어 명령을 묶어서 처리하는 상위 cmd입니다.
+        실제 동작 종류는 payload 첫 바이트의 <span class="mono">MotionAction</span> 값으로 구분되며,
+        현재 문서는 그중 <span class="mono">PLAY / STOP / PAUSE</span>를 중심으로 설명합니다.
+      </div>
+
+      <div class="function-grid">
+        <div class="function-block">
+          <h4>명령 개요</h4>
+          <ul>
+            <li>요청 헤더는 <span class="mono">src_id | tar_id | cmd | payload_len(LE)</span> 순서입니다.</li>
+            <li><span class="mono">cmd = 0x04</span> 이면 이 패킷은 모두 <span class="mono">CMD_MOTION_CTRL</span> 로 해석됩니다.</li>
+            <li>payload 첫 바이트의 action 값이 실제 동작을 결정합니다.</li>
+            <li>즉 PLAY, STOP, PAUSE는 서로 다른 독립 cmd가 아니라 같은 cmd 안에서 <span class="mono">payload[0]</span> 값으로 구분됩니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>MotionAction 값</h4>
+          <ul>
+            <li><span class="mono">0x00 = MOTION_ACTION_PLAY</span> : 모션 재생 시작</li>
+            <li><span class="mono">0x01 = MOTION_ACTION_STOP</span> : 현재 재생 즉시 정지</li>
+            <li><span class="mono">0x02 = MOTION_ACTION_PAUSE</span> : 현재 재생 일시정지</li>
+            <li><span class="mono">0x03 = MOTION_ACTION_SEEK</span> : 지정 시간 위치 이동</li>
+            <li>이 페이지는 우선 PLAY / STOP / PAUSE를 중심으로 정리하고, SEEK는 이후 별도 상세를 추가하면 됩니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>공통 처리 흐름</h4>
+          <ul>
+            <li>통신 레이어는 먼저 <span class="mono">cmd = CMD_MOTION_CTRL</span> 인지 확인합니다.</li>
+            <li>그 다음 payload[0] 값을 읽어 PLAY / STOP / PAUSE / SEEK 중 어떤 동작인지 분기합니다.</li>
+            <li>각 action은 대응되는 app 함수로 연결되지만, 구체적인 함수 사용법은 <strong>전체 함수</strong> 탭에서 따로 설명합니다.</li>
+            <li>여기서는 명령 해석과 action 분기 자체만 명령 관점으로 봅니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block" id="commands-motion-ctrl-play">
+          <h4>payload[0] = 0x00 : PLAY</h4>
+          <ul>
+            <li>action 값은 <span class="mono">0x00</span> 입니다.</li>
+            <li>요청 예시는 <span class="mono">00 01 04 01 00 00</span> 처럼 payload 1바이트만 포함합니다.</li>
+            <li>이 값은 "모션 재생 시작 요청"으로 해석됩니다.</li>
+            <li>App 함수 사용법과 구현 책임은 <strong>전체 함수 &gt; App_MotionPlay</strong>에서 봅니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block" id="commands-motion-ctrl-stop">
+          <h4>payload[0] = 0x01 : STOP</h4>
+          <ul>
+            <li>action 값은 <span class="mono">0x01</span> 입니다.</li>
+            <li>현재 재생 중인 모션을 즉시 중단하는 용도로 사용합니다.</li>
+            <li>이 값은 "현재 재생 즉시 정지"로 해석됩니다.</li>
+            <li>함수 사용법은 <strong>전체 함수 &gt; App_MotionStop</strong>에서 봅니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block" id="commands-motion-ctrl-pause">
+          <h4>payload[0] = 0x02 : PAUSE</h4>
+          <ul>
+            <li>action 값은 <span class="mono">0x02</span> 입니다.</li>
+            <li>현재 재생을 잠시 멈추고, 이후 재개 가능한 상태를 유지하는 용도입니다.</li>
+            <li>이 값은 "현재 재생 일시정지"로 해석됩니다.</li>
+            <li>함수 사용법은 <strong>전체 함수 &gt; App_MotionPause</strong>에서 봅니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block function-block-wide">
+          <h4>요청 바이트 예시</h4>
+          <pre><code>/* PC -> MCU : PLAY 요청 */
+00 01 04 01 00 00
+
+00 = src_id
+01 = tar_id
+04 = CMD_MOTION_CTRL
+01 00 = payload_len (LE)
+00 = payload[0] = MOTION_ACTION_PLAY</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="function-card" id="commands-ping-detail">
+      <div class="function-head">
+        <span class="badge b-cmd">PC→MCU 명령</span>
+        <span class="badge b-rw">cmd = 0x01</span>
+        <span class="function-title">CMD_PING</span>
+      </div>
+      <div class="command-app-links">
+        <span class="command-app-links-label">사용 app 함수:</span>
+        <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-ping')">App_Ping</button>
+      </div>
+      <div class="function-sub">
+        <span class="mono">CMD_PING</span>은 장치가 살아 있고 통신 가능 상태인지 확인하는 기본 명령입니다.
+        현재 binary 구현 기준으로 성공 시 <span class="mono">CMD_PONG</span>를 payload 없이 돌려주며,
+        문서 상단의 장치 정보 응답 같은 추가 payload는 아직 이 cmd에 포함되지 않습니다.
+      </div>
+
+      <div class="function-grid">
+        <div class="function-block">
+          <h4>명령 개요</h4>
+          <ul>
+            <li>요청 헤더는 <span class="mono">src_id | tar_id | cmd | payload_len(LE)</span> 순서입니다.</li>
+            <li><span class="mono">cmd = 0x01</span> 이면 <span class="mono">CMD_PING</span> 로 해석됩니다.</li>
+            <li>현재 구현에서 요청 payload는 없습니다.</li>
+            <li>브로드캐스트(<span class="mono">tar_id = 0xFF</span>) 또는 단일 장치 ping에 모두 사용할 수 있습니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>현재 구현 기준 응답</h4>
+          <ul>
+            <li>성공 시 응답 cmd는 <span class="mono">CMD_PONG(0x02)</span> 입니다.</li>
+            <li>성공 응답은 <span class="mono">STATUS_OK</span>, <span class="mono">payload_len = 0</span> 입니다.</li>
+            <li>즉 현재 binary 구현에서는 DI_ID, FW 버전, 상태 정보를 payload로 싣지 않습니다.</li>
+            <li>실패 시에는 에러 응답으로 처리됩니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>대표 사용 항목</h4>
+          <ul>
+            <li><strong>장치 발견 / Ping</strong> 항목이 이 cmd에 직접 대응합니다.</li>
+            <li>PC는 네트워크에서 응답 가능한 장치를 찾기 위해 ping을 보냅니다.</li>
+            <li>현재 프로젝트에서는 장치 정보 조회보다 "응답 여부 확인" 성격이 더 강합니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>공통 처리 흐름</h4>
+          <ul>
+            <li>통신 레이어가 <span class="mono">CMD_PING</span> 을 확인하면 <span class="mono">App_Ping()</span> 을 호출합니다.</li>
+            <li><span class="mono">App_Ping()</span> 이 true를 반환하면 <span class="mono">CMD_PONG</span> 성공 응답을 보냅니다.</li>
+            <li>false를 반환하면 실패로 간주하고 에러 응답을 보냅니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block function-block-wide">
+          <h4>요청 / 응답 바이트 예시</h4>
+          <pre><code>/* PC -> MCU : broadcast ping */
+00 FF 01 00 00
+
+00 = src_id (PC)
+FF = tar_id (broadcast)
+01 = CMD_PING
+00 00 = payload_len (LE)</code></pre>
+          <pre><code>/* MCU -> PC : pong success */
+0A 00 02 00 00 00
+
+0A = src_id (example device id)
+00 = tar_id (PC)
+02 = CMD_PONG
+00 = STATUS_OK
+00 00 = payload_len (LE)</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="function-card" id="commands-get-file-detail">
+      <div class="function-head">
+        <span class="badge b-cmd">PC→MCU 명령</span>
+        <span class="badge b-rw">cmd = 0x21</span>
+        <span class="function-title">CMD_GET_FILE</span>
+      </div>
+      <div class="command-app-links">
+        <span class="command-app-links-label">사용 app 함수:</span>
+        <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button>
+      </div>
+      <div class="function-sub">
+        <span class="mono">CMD_GET_FILE</span>은 path 문자열 하나로 실제 대상 파일을 구분하는 범용 읽기 명령입니다.
+        따라서 <strong>DI_ID / MT_RP / MT_CT / MT_ST / MT_LI / MT_AT / MT_LK / 모터 Midi 파라미터 / Midi 페이지 설정 / 로그 읽기</strong>는
+        전용 cmd가 아니라 모두 이 상위 cmd로 읽습니다.
+      </div>
+
+      <div class="function-grid">
+        <div class="function-block">
+          <h4>명령 개요</h4>
+          <ul>
+            <li>요청 payload는 <span class="mono">path_len(2 LE) + path(path_len)</span> 입니다.</li>
+            <li>응답 payload는 <span class="mono">path_len + path + content_len + content</span> 입니다.</li>
+            <li>동일한 cmd 안에서 path 값만 바꿔 여러 설정 파일과 로그 파일을 읽습니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>대표 읽기 대상</h4>
+          <ul>
+            <li><span class="mono">Setting/DI_ID.TXT</span></li>
+            <li><span class="mono">Setting/MT_RP.TXT</span>, <span class="mono">Setting/MT_CT.TXT</span>, <span class="mono">Setting/MT_ST.TXT</span></li>
+            <li><span class="mono">Setting/MT_LI.TXT</span>, <span class="mono">Setting/MT_AT.TXT</span>, <span class="mono">Setting/MT_LK.TXT</span></li>
+            <li><span class="mono">Midi/motor/{id}.ini</span>, <span class="mono">Midi/page/data.ini</span></li>
+            <li><span class="mono">Log/BOOT.TXT</span>, <span class="mono">Log/SENSOR.TXT</span></li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>공통 처리 흐름</h4>
+          <ul>
+            <li>통신 레이어가 path 길이와 payload 길이 일치를 먼저 검사합니다.</li>
+            <li>path를 문자열로 복원한 뒤 <span class="mono">App_GetFile(path, out_content, max_len)</span> 을 호출합니다.</li>
+            <li>성공 시 path와 content를 함께 응답에 담고, 실패 시 <span class="mono">ERR_FILE_NOT_FOUND</span> 를 보냅니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>함수 사용 위치</h4>
+          <ul>
+            <li>구현 책임은 <strong>전체 함수 &gt; App_GetFile</strong>에 모여 있습니다.</li>
+            <li>읽기 전용 cmd이고, 실제 저장은 <span class="mono">CMD_SAVE_FILE</span> 에서 처리합니다.</li>
+            <li>저장 후 비교 검증은 <span class="mono">CMD_VERIFY_FILE</span> 에서 처리합니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block function-block-wide">
+          <h4>요청 / 응답 payload 예시</h4>
+          <pre><code>/* read request for Setting/DI_ID.TXT */
+11 00 | "Setting/DI_ID.TXT"
+
+11 00 = path_len (17, LE)
+Setting/DI_ID.TXT = path</code></pre>
+          <pre><code>/* success response payload example */
+11 00 | "Setting/DI_ID.TXT" | 02 00 | "10"
+
+11 00 = path_len (LE)
+Setting/DI_ID.TXT = path
+02 00 = content_len (LE)
+10 = content</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="function-card" id="commands-save-file-detail">
+      <div class="function-head">
+        <span class="badge b-cmd">PC→MCU 명령</span>
+        <span class="badge b-rw">cmd = 0x22</span>
+        <span class="function-title">CMD_SAVE_FILE</span>
+      </div>
+      <div class="command-app-links">
+        <span class="command-app-links-label">사용 app 함수:</span>
+        <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button>
+      </div>
+      <div class="function-sub">
+        <span class="mono">CMD_SAVE_FILE</span>은 path와 content를 함께 보내 실제 파일 내용을 저장하는 범용 쓰기 명령입니다.
+        설정 파일과 Midi 파일 계열은 현재 코드 기준으로 모두 이 cmd를 통해 갱신합니다.
+      </div>
+
+      <div class="function-grid">
+        <div class="function-block">
+          <h4>명령 개요</h4>
+          <ul>
+            <li>요청 payload는 <span class="mono">path_len(2 LE) + path + content_len(2 LE) + content</span> 입니다.</li>
+            <li>성공 응답 payload는 <span class="mono">path_len + path</span> 만 돌려줍니다.</li>
+            <li>즉 응답은 "어떤 파일 저장을 수락했는가" 확인용입니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>대표 쓰기 대상</h4>
+          <ul>
+            <li><span class="mono">Setting/DI_ID.TXT</span></li>
+            <li><span class="mono">Setting/MT_RP.TXT</span>, <span class="mono">Setting/MT_CT.TXT</span>, <span class="mono">Setting/MT_ST.TXT</span></li>
+            <li><span class="mono">Setting/MT_LI.TXT</span>, <span class="mono">Setting/MT_AT.TXT</span>, <span class="mono">Setting/MT_LK.TXT</span></li>
+            <li><span class="mono">Midi/motor/{id}.ini</span>, <span class="mono">Midi/page/data.ini</span></li>
+            <li>로그 파일 읽기는 <span class="mono">CMD_GET_FILE</span> 범위이고, 이번 문서에서는 로그 저장까지 다루지 않습니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>공통 처리 흐름</h4>
+          <ul>
+            <li>통신 레이어가 path와 content 길이를 검증합니다.</li>
+            <li>그 다음 <span class="mono">App_SaveFile(path, content)</span> 을 호출합니다.</li>
+            <li>성공 시 path만 담은 성공 응답을 보내고, 실패 시 에러 응답을 보냅니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>함수 사용 위치</h4>
+          <ul>
+            <li>구현 책임은 <strong>전체 함수 &gt; App_SaveFile</strong>에 모여 있습니다.</li>
+            <li>저장 후 실제 내용이 맞는지 확인하려면 <span class="mono">CMD_VERIFY_FILE</span> 을 이어서 사용합니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block function-block-wide">
+          <h4>요청 / 응답 payload 예시</h4>
+          <pre><code>/* write request for Setting/MT_RP.TXT = "1" */
+11 00 | "Setting/MT_RP.TXT" | 01 00 | "1"
+
+11 00 = path_len (17, LE)
+Setting/MT_RP.TXT = path
+01 00 = content_len (1, LE)
+1 = content</code></pre>
+          <pre><code>/* success response payload */
+11 00 | "Setting/MT_RP.TXT"
+
+11 00 = path_len (LE)
+Setting/MT_RP.TXT = path</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="function-card" id="commands-verify-file-detail">
+      <div class="function-head">
+        <span class="badge b-cmd">PC→MCU 명령</span>
+        <span class="badge b-rw">cmd = 0x23</span>
+        <span class="function-title">CMD_VERIFY_FILE</span>
+      </div>
+      <div class="command-app-links">
+        <span class="command-app-links-label">사용 app 함수:</span>
+        <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button>
+      </div>
+      <div class="function-sub">
+        <span class="mono">CMD_VERIFY_FILE</span>은 expected content를 같이 보내 저장된 파일 내용과 일치 여부를 확인하는 검증 명령입니다.
+        설정 파일과 Midi 파일을 저장한 뒤 PC가 후속 확인용으로 사용할 수 있습니다.
+      </div>
+
+      <div class="function-grid">
+        <div class="function-block">
+          <h4>명령 개요</h4>
+          <ul>
+            <li>요청 payload 구조는 <span class="mono">CMD_SAVE_FILE</span> 과 동일합니다.</li>
+            <li>성공 응답 payload는 <span class="mono">path_len + path + match(1)</span> 입니다.</li>
+            <li><span class="mono">match = 0x01</span> 이면 일치, <span class="mono">0x00</span> 이면 불일치입니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>대표 검증 대상</h4>
+          <ul>
+            <li><span class="mono">Setting/DI_ID.TXT</span></li>
+            <li><span class="mono">Setting/MT_RP.TXT</span>, <span class="mono">Setting/MT_CT.TXT</span>, <span class="mono">Setting/MT_ST.TXT</span></li>
+            <li><span class="mono">Setting/MT_LI.TXT</span>, <span class="mono">Setting/MT_AT.TXT</span>, <span class="mono">Setting/MT_LK.TXT</span></li>
+            <li><span class="mono">Midi/motor/{id}.ini</span>, <span class="mono">Midi/page/data.ini</span></li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>공통 처리 흐름</h4>
+          <ul>
+            <li>통신 레이어가 path와 expected content를 복원합니다.</li>
+            <li><span class="mono">App_VerifyFile(path, content, &amp;match)</span> 을 호출합니다.</li>
+            <li>파일을 읽을 수 없으면 실패, 읽을 수 있으면 일치 여부를 1바이트 match 값으로 응답합니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>함수 사용 위치</h4>
+          <ul>
+            <li>구현 책임은 <strong>전체 함수 &gt; App_VerifyFile</strong>에 모여 있습니다.</li>
+            <li>저장 자체는 <span class="mono">CMD_SAVE_FILE</span>, 읽기는 <span class="mono">CMD_GET_FILE</span> 과 역할이 나뉩니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block function-block-wide">
+          <h4>요청 / 응답 payload 예시</h4>
+          <pre><code>/* verify request for Setting/MT_RP.TXT = "1" */
+11 00 | "Setting/MT_RP.TXT" | 01 00 | "1"
+
+11 00 = path_len (LE)
+Setting/MT_RP.TXT = path
+01 00 = content_len (LE)
+1 = expected content</code></pre>
+          <pre><code>/* success response payload */
+11 00 | "Setting/MT_RP.TXT" | 01
+
+11 00 = path_len (LE)
+Setting/MT_RP.TXT = path
+01 = match (1 = same, 0 = different)</code></pre>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- 전체 함수 -->
+<div class="panel" id="panel-functions">
+  <div class="section-note">
+    이 탭은 <span class="mono">App_*</span> 함수가 언제 호출되고, app 코드 작성자가 무엇을 구현해야 하는지 함수 관점으로 정리합니다.<br>
+    현재는 <strong>App_MotionPlay / Stop / Pause / Seek / Ping / GetFile / SaveFile / VerifyFile</strong>를 먼저 정리했고,
+    이후 다른 App 함수도 같은 형식으로 순차 추가하면 됩니다.
+  </div>
+
+  <div class="group">
+    <div class="group-title">함수 목록</div>
+    <div class="command-list">
+      <div class="command-linkcard">
+        <button type="button" class="command-linkbtn" onclick="openFunctionDoc('functions-app-motion-play')">
+          <div class="command-linktitle">App_MotionPlay</div>
+          <div class="command-linkdesc"><span class="mono">payload[0] = 0x00</span> 일 때 호출. 재생 시작 요청을 app 로직에 연결합니다.</div>
+        </button>
+      </div>
+
+      <div class="command-linkcard">
+        <button type="button" class="command-linkbtn" onclick="openFunctionDoc('functions-app-motion-stop')">
+          <div class="command-linktitle">App_MotionStop</div>
+          <div class="command-linkdesc"><span class="mono">payload[0] = 0x01</span> 일 때 호출. 현재 재생을 즉시 정지합니다.</div>
+        </button>
+      </div>
+
+      <div class="command-linkcard">
+        <button type="button" class="command-linkbtn" onclick="openFunctionDoc('functions-app-motion-pause')">
+          <div class="command-linktitle">App_MotionPause</div>
+          <div class="command-linkdesc"><span class="mono">payload[0] = 0x02</span> 일 때 호출. 현재 재생 위치를 유지한 채 일시정지합니다.</div>
+        </button>
+      </div>
+
+      <div class="command-linkcard">
+        <button type="button" class="command-linkbtn" onclick="openFunctionDoc('functions-app-motion-seek')">
+          <div class="command-linktitle">App_MotionSeek</div>
+          <div class="command-linkdesc"><span class="mono">payload[0] = 0x03</span> 일 때 호출. <span class="mono">time_ms</span> 위치로 이동합니다.</div>
+        </button>
+      </div>
+
+      <div class="command-linkcard">
+        <button type="button" class="command-linkbtn" onclick="openFunctionDoc('functions-app-ping')">
+          <div class="command-linktitle">App_Ping</div>
+          <div class="command-linkdesc"><span class="mono">CMD_PING</span> 수신 시 호출. 장치가 응답 가능한 상태인지 확인합니다.</div>
+        </button>
+      </div>
+
+      <div class="command-linkcard">
+        <button type="button" class="command-linkbtn" onclick="openFunctionDoc('functions-app-get-file')">
+          <div class="command-linktitle">App_GetFile</div>
+          <div class="command-linkdesc">설정 / Midi / 로그 파일 읽기 공통 진입점입니다.</div>
+        </button>
+      </div>
+
+      <div class="command-linkcard">
+        <button type="button" class="command-linkbtn" onclick="openFunctionDoc('functions-app-save-file')">
+          <div class="command-linktitle">App_SaveFile</div>
+          <div class="command-linkdesc">설정 / Midi 파일 저장 공통 진입점입니다.</div>
+        </button>
+      </div>
+
+      <div class="command-linkcard">
+        <button type="button" class="command-linkbtn" onclick="openFunctionDoc('functions-app-verify-file')">
+          <div class="command-linktitle">App_VerifyFile</div>
+          <div class="command-linkdesc">저장된 파일 내용과 기대값 일치 여부를 검증합니다.</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">선택된 함수 설명</div>
+    <section class="function-card" id="functions-app-motion-play">
+      <div class="function-head">
+        <span class="badge b-cmd">App 함수</span>
+        <button type="button" class="badge badge-link b-rw" onclick="openCommandDoc('commands-motion-ctrl-detail')">called by CMD_MOTION_CTRL</button>
+        <span class="function-title">App_MotionPlay(uint8_t device_id)</span>
+      </div>
+      <div class="function-sub">
+        <span class="mono">CMD_MOTION_CTRL</span> 패킷에서 <span class="mono">payload[0] = 0x00</span> 이 들어오면
+        통신 레이어가 <span class="mono">App_MotionPlay(ctx-&gt;my_id)</span> 를 호출합니다.
+        이 함수는 "모션 재생 요청을 실제 장치 동작으로 연결하는 app 진입점"입니다.
+      </div>
+
+      <div class="function-grid">
+        <div class="function-block">
+          <h4>언제 호출되는가</h4>
+          <ul>
+            <li>PC가 <span class="mono">CMD_MOTION_CTRL</span> + <span class="mono">payload[0] = 0x00</span> 을 보내면 호출됩니다.</li>
+            <li>호출 주체는 통신 레이어이며, app 코드는 직접 패킷을 파싱하지 않습니다.</li>
+            <li>입력 인자는 현재 장치 id 하나뿐입니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>app 코드가 해야 할 일</h4>
+          <ul>
+            <li>현재 장치가 PLAY를 받을 수 있는 상태인지 확인합니다.</li>
+            <li>필요하면 반복 정책이나 현재 프로그램 상태를 읽습니다.</li>
+            <li>실제 모션 플레이어 또는 상태 머신에 재생 시작을 요청합니다.</li>
+            <li>재생 시작 수락이면 true, 시작 불가면 false를 반환합니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>하면 안 되는 일</h4>
+          <ul>
+            <li>패킷 바이트 파싱이나 <span class="mono">payload_len</span> 해석</li>
+            <li>응답 프레임 생성, UART/XBee 송신</li>
+            <li>cmd/action 상수 정의를 app 로직 내부에 다시 구현하는 일</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>호출 결과를 PC는 어떻게 보는가</h4>
+          <ul>
+            <li>true 반환: 통신 레이어가 요청 수락으로 간주하고 성공 응답을 보냅니다.</li>
+            <li>false 반환: 통신 레이어가 실패로 간주하고 에러 응답을 보냅니다.</li>
+            <li>즉 이 함수는 "재생 완료"가 아니라 "재생 시작 요청 수락 여부"를 알려 주는 함수입니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block function-block-wide">
+          <h4>레퍼런스 코드 조각</h4>
+          <pre><code>/* 통신 레이어에서의 연결 */
+case MOTION_ACTION_PLAY:
+    /* 통신 레이어가 action을 해석한 결과를 app 함수로 전달 */
+    ok = App_MotionPlay(ctx-&gt;my_id);
+    break;</code></pre>
+          <pre><code>/* app 레이어 구현 예시 */
+bool App_MotionPlay(uint8_t device_id)
+{
+    /* 다른 장치로 잘못 들어온 호출은 거부 */
+    if (device_id != MY_DEVICE_ID) {
+        return false;
+    }
+
+    /* 초기화나 리소스 준비가 끝났는지 확인 */
+    if (!Motion_IsReady()) {
+        return false;
+    }
+
+    /* 이미 재생 중이면 중복 시작을 막음 */
+    if (Motion_IsPlaying()) {
+        return false;
+    }
+
+    /* 설정 파일 기반 반복 정책을 현재 플레이어 상태에 반영 */
+    Motion_LoadRepeatPolicyFromSettings();
+    /* 현재 선택된 프로그램의 재생 시작을 요청 */
+    return Motion_StartCurrentProgram();
+}</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="function-card" id="functions-app-motion-stop">
+      <div class="function-head">
+        <span class="badge b-cmd">App 함수</span>
+        <button type="button" class="badge badge-link b-rw" onclick="openCommandDoc('commands-motion-ctrl-detail')">called by CMD_MOTION_CTRL</button>
+        <span class="function-title">App_MotionStop(uint8_t device_id)</span>
+      </div>
+      <div class="function-sub">
+        <span class="mono">CMD_MOTION_CTRL</span> 패킷에서 <span class="mono">payload[0] = 0x01</span> 이 들어오면
+        통신 레이어가 <span class="mono">App_MotionStop(ctx-&gt;my_id)</span> 를 호출합니다.
+        이 함수는 현재 재생 중인 모션을 정지 상태로 전환하는 app 진입점입니다.
+      </div>
+
+      <div class="function-grid">
+        <div class="function-block">
+          <h4>언제 호출되는가</h4>
+          <ul>
+            <li>PC가 <span class="mono">CMD_MOTION_CTRL</span> + <span class="mono">payload[0] = 0x01</span> 을 보내면 호출됩니다.</li>
+            <li>통신 레이어가 action 값을 해석한 뒤 app 함수만 호출합니다.</li>
+            <li>입력 인자는 현재 장치 id 하나입니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>app 코드가 해야 할 일</h4>
+          <ul>
+            <li>현재 재생 중인 모션이 있으면 즉시 정지 요청을 내립니다.</li>
+            <li>재생 타이머, 큐, 출력 상태 등 정지 시 함께 멈춰야 할 자원을 정리합니다.</li>
+            <li>정지 성공이면 true, 정지 불가 또는 실패면 false를 반환합니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>하면 안 되는 일</h4>
+          <ul>
+            <li>패킷 길이 검사나 action 값 해석을 app 코드에서 다시 하지 않습니다.</li>
+            <li>응답 패킷 생성이나 전송을 직접 처리하지 않습니다.</li>
+            <li>STOP 요청을 별도 cmd처럼 다시 정의하지 않습니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block function-block-wide">
+          <h4>레퍼런스 코드 조각</h4>
+          <pre><code>case MOTION_ACTION_STOP:
+    /* STOP action은 장치 ID만 넘겨 app 정지 로직으로 연결 */
+    ok = App_MotionStop(ctx-&gt;my_id);
+    break;</code></pre>
+          <pre><code>bool App_MotionStop(uint8_t device_id)
+{
+    /* 장치 ID 보호 */
+    if (device_id != MY_DEVICE_ID) {
+        return false;
+    }
+
+    /* 현재 재생 중인 모션과 관련 출력 상태를 정지 */
+    Motion_Stop();
+    /* stop 요청을 정상 수락했음을 통신 레이어에 알림 */
+    return true;
+}</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="function-card" id="functions-app-motion-pause">
+      <div class="function-head">
+        <span class="badge b-cmd">App 함수</span>
+        <button type="button" class="badge badge-link b-rw" onclick="openCommandDoc('commands-motion-ctrl-detail')">called by CMD_MOTION_CTRL</button>
+        <span class="function-title">App_MotionPause(uint8_t device_id)</span>
+      </div>
+      <div class="function-sub">
+        <span class="mono">CMD_MOTION_CTRL</span> 패킷에서 <span class="mono">payload[0] = 0x02</span> 이 들어오면
+        통신 레이어가 <span class="mono">App_MotionPause(ctx-&gt;my_id)</span> 를 호출합니다.
+        이 함수는 현재 재생 위치를 유지한 채 일시정지 상태로 전환하는 app 진입점입니다.
+      </div>
+
+      <div class="function-grid">
+        <div class="function-block">
+          <h4>언제 호출되는가</h4>
+          <ul>
+            <li>PC가 <span class="mono">CMD_MOTION_CTRL</span> + <span class="mono">payload[0] = 0x02</span> 을 보내면 호출됩니다.</li>
+            <li>PLAY와 마찬가지로 패킷 파싱은 통신 레이어에서 끝나고 app 함수만 호출됩니다.</li>
+            <li>입력 인자는 현재 장치 id 하나입니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>app 코드가 해야 할 일</h4>
+          <ul>
+            <li>현재 재생 위치와 상태를 유지한 채 출력 갱신만 멈출지, 타이머까지 멈출지 정책을 정합니다.</li>
+            <li>pause를 지원하지 않거나 현재 상태에서 중단이 불가하면 false를 반환할 수 있습니다.</li>
+            <li>pause 성공이면 이후 resume 또는 재생 재개 정책과 호환되는 상태를 남겨야 합니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>하면 안 되는 일</h4>
+          <ul>
+            <li>pause를 stop처럼 처리해 재생 위치 정보를 무조건 버리지 않습니다.</li>
+            <li>응답 송신이나 상태 응답 포맷을 app 함수에서 직접 다루지 않습니다.</li>
+            <li>다른 action 값을 다시 판별하지 않습니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block function-block-wide">
+          <h4>레퍼런스 코드 조각</h4>
+          <pre><code>case MOTION_ACTION_PAUSE:
+    /* PAUSE action을 app 레이어의 일시정지 처리로 전달 */
+    ok = App_MotionPause(ctx-&gt;my_id);
+    break;</code></pre>
+          <pre><code>bool App_MotionPause(uint8_t device_id)
+{
+    /* 장치 ID 보호 */
+    if (device_id != MY_DEVICE_ID) {
+        return false;
+    }
+
+    /* 현재 위치를 유지한 채 pause 처리 */
+    return Motion_Pause();
+}</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="function-card" id="functions-app-motion-seek">
+      <div class="function-head">
+        <span class="badge b-cmd">App 함수</span>
+        <button type="button" class="badge badge-link b-rw" onclick="openCommandDoc('commands-motion-ctrl-detail')">called by CMD_MOTION_CTRL</button>
+        <span class="function-title">App_MotionSeek(uint8_t device_id, uint32_t time_ms)</span>
+      </div>
+      <div class="function-sub">
+        <span class="mono">CMD_MOTION_CTRL</span> 패킷에서 <span class="mono">payload[0] = 0x03</span> 이 들어오고
+        전체 <span class="mono">payload_len = 5</span> 일 때, 통신 레이어가 <span class="mono">payload[1..4]</span> 를
+        little-endian <span class="mono">time_ms</span> 로 해석한 뒤 <span class="mono">App_MotionSeek(ctx-&gt;my_id, time_ms)</span> 를 호출합니다.
+      </div>
+
+      <div class="function-grid">
+        <div class="function-block">
+          <h4>언제 호출되는가</h4>
+          <ul>
+            <li>PC가 <span class="mono">payload[0] = 0x03</span> 과 seek 대상 시간 4바이트를 함께 보낼 때 호출됩니다.</li>
+            <li><span class="mono">payload_len != 5</span> 이면 통신 레이어에서 바로 에러 응답을 보내므로 app 함수는 호출되지 않습니다.</li>
+            <li>입력 인자는 현재 장치 id와 목표 시간 <span class="mono">time_ms</span> 입니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>app 코드가 해야 할 일</h4>
+          <ul>
+            <li><span class="mono">time_ms</span> 가 현재 모션 길이 범위 안에 있는지 검증합니다.</li>
+            <li>내부 플레이어를 해당 시간 위치로 이동시키고, 필요하면 보간 상태나 출력 캐시를 다시 맞춥니다.</li>
+            <li>seek 성공이면 true, 범위 초과나 이동 실패면 false를 반환합니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>요청 데이터 해석</h4>
+          <ul>
+            <li><span class="mono">payload[0]</span> : <span class="mono">MOTION_ACTION_SEEK (0x03)</span></li>
+            <li><span class="mono">payload[1..4]</span> : little-endian 32비트 <span class="mono">time_ms</span></li>
+            <li>예: <span class="mono">03 F4 01 00 00</span> 이면 <span class="mono">time_ms = 500</span> ms 입니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block function-block-wide">
+          <h4>레퍼런스 코드 조각</h4>
+          <pre><code>case MOTION_ACTION_SEEK:
+    /* SEEK는 action 1바이트 + time_ms 4바이트가 반드시 필요 */
+    if (payload_len != 5u) {
+        SendErrorResponse(ctx, src_id, (uint8_t)CMD_MOTION_CTRL, ERR_INVALID_INPUT, NULL);
+        return;
+    }
+    {
+        /* payload[1..4]에서 32비트 시간을 복원 */
+        uint32_t time_ms = read_u32le(payload + 1u);
+        /* 해석된 목표 시간을 app seek 함수로 전달 */
+        ok = App_MotionSeek(ctx-&gt;my_id, time_ms);
+    }
+    break;</code></pre>
+          <pre><code>bool App_MotionSeek(uint8_t device_id, uint32_t time_ms)
+{
+    /* 장치 ID 보호 */
+    if (device_id != MY_DEVICE_ID) {
+        return false;
+    }
+
+    /* 요청된 시간이 현재 모션 길이를 넘는지 확인 */
+    if (time_ms > Motion_GetDurationMs()) {
+        return false;
+    }
+
+    /* 내부 플레이어를 지정한 시간 위치로 이동 */
+    return Motion_Seek(time_ms);
+}</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="function-card" id="functions-app-ping">
+      <div class="function-head">
+        <span class="badge b-cmd">App 함수</span>
+        <button type="button" class="badge badge-link b-rw" onclick="openCommandDoc('commands-ping-detail')">called by CMD_PING</button>
+        <span class="function-title">App_Ping(void)</span>
+      </div>
+      <div class="function-sub">
+        <span class="mono">CMD_PING</span> 이 들어오면 통신 레이어가 <span class="mono">App_Ping()</span> 을 호출합니다.
+        이 함수는 장치가 현재 응답 가능한 상태인지 판단하는 가장 얇은 app 진입점입니다.
+      </div>
+
+      <div class="function-grid">
+        <div class="function-block">
+          <h4>언제 호출되는가</h4>
+          <ul>
+            <li>PC가 <span class="mono">CMD_PING</span> 을 보내면 호출됩니다.</li>
+            <li>현재 구현에서는 입력 payload가 없으므로 함수 인자도 없습니다.</li>
+            <li>대표 대응 항목은 <strong>장치 발견 / Ping</strong> 입니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>app 코드가 해야 할 일</h4>
+          <ul>
+            <li>장치가 통신 응답 가능한 상태인지 간단히 판단합니다.</li>
+            <li>필요하면 초기화 완료 여부나 통신 서브시스템 상태를 확인합니다.</li>
+            <li>응답 가능하면 true, 불가하면 false를 반환합니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>PC는 어떻게 해석하는가</h4>
+          <ul>
+            <li>true 반환 시 통신 레이어가 <span class="mono">CMD_PONG</span> 성공 응답을 보냅니다.</li>
+            <li>false 반환 시 에러 응답으로 처리됩니다.</li>
+            <li>현재 binary 구현 기준으로 PONG payload는 비어 있습니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>하면 안 되는 일</h4>
+          <ul>
+            <li>PONG 프레임을 app 코드에서 직접 만들지 않습니다.</li>
+            <li>DI_ID, FW 버전 등 추가 payload를 여기서 임의로 붙이지 않습니다.</li>
+            <li>ping 용도를 모션/파일 명령과 섞지 않습니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block function-block-wide">
+          <h4>레퍼런스 코드 조각</h4>
+          <pre><code>/* 통신 레이어에서의 연결 */
+bool ok = App_Ping();
+if (ok) {
+    /* 응답 가능하면 payload 없는 CMD_PONG 성공 응답 */
+    SendBinaryResponse(ctx, src_id, (uint8_t)CMD_PONG, STATUS_OK, NULL, 0u);
+}</code></pre>
+          <pre><code>/* app 레이어 구현 예시 */
+bool App_Ping(void)
+{
+    /* 최소 구현은 "지금 응답 가능한가"만 판단하면 충분 */
+    return true;
+}</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="function-card" id="functions-app-get-file">
+      <div class="function-head">
+        <span class="badge b-cmd">App 함수</span>
+        <button type="button" class="badge badge-link b-rw" onclick="openCommandDoc('commands-get-file-detail')">called by CMD_GET_FILE</button>
+        <span class="function-title">App_GetFile(const char *path, char *out_content, uint16_t max_len)</span>
+      </div>
+      <div class="function-sub">
+        <span class="mono">CMD_GET_FILE</span> 요청이 들어오면 통신 레이어가 path 문자열을 복원한 뒤
+        <span class="mono">App_GetFile(path, out_content, max_len)</span> 을 호출합니다.
+        이 함수는 설정 파일, Midi 파일, 로그 파일 읽기의 공통 app 진입점입니다.
+      </div>
+
+      <div class="function-grid">
+        <div class="function-block">
+          <h4>언제 호출되는가</h4>
+          <ul>
+            <li>PC가 <span class="mono">CMD_GET_FILE</span> 로 특정 path를 읽고 싶을 때 호출됩니다.</li>
+            <li>통신 레이어가 payload에서 path를 꺼낸 뒤 app 함수만 호출합니다.</li>
+            <li>입력은 <span class="mono">path</span>, 출력은 <span class="mono">out_content</span> 버퍼입니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>대표 사용 항목</h4>
+          <ul>
+            <li><strong>DI_ID 읽기/쓰기</strong> → <span class="mono">Setting/DI_ID.TXT</span></li>
+            <li><strong>반복재생 설정 / 반복횟수 / 모터 초기화 / 소프트 리밋 / 앱솔루트 / 모터 링크</strong></li>
+            <li><span class="mono">Setting/MT_RP.TXT</span>, <span class="mono">MT_CT.TXT</span>, <span class="mono">MT_ST.TXT</span>, <span class="mono">MT_LI.TXT</span>, <span class="mono">MT_AT.TXT</span>, <span class="mono">MT_LK.TXT</span></li>
+            <li><strong>모터 Midi 파라미터 / Midi 페이지 설정</strong> → <span class="mono">Midi/motor/{id}.ini</span>, <span class="mono">Midi/page/data.ini</span></li>
+            <li><strong>로그 읽기</strong> → <span class="mono">Log/BOOT.TXT</span>, <span class="mono">Log/SENSOR.TXT</span></li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>app 코드가 해야 할 일</h4>
+          <ul>
+            <li>요청 path가 실제로 읽을 수 있는 파일인지 판단합니다.</li>
+            <li>파일 내용을 <span class="mono">max_len</span> 을 넘지 않게 버퍼에 복사하고 null 종료를 보장합니다.</li>
+            <li>읽기 성공이면 true, 파일 없음 또는 읽기 실패면 false를 반환합니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>하면 안 되는 일</h4>
+          <ul>
+            <li>payload 길이 검증이나 path_len 파싱을 app 코드에서 다시 하지 않습니다.</li>
+            <li>응답 프레임 작성이나 전송을 직접 처리하지 않습니다.</li>
+            <li>쓰기와 검증까지 한 함수에 억지로 합치지 않습니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block function-block-wide">
+          <h4>레퍼런스 코드 조각</h4>
+          <pre><code>/* 통신 레이어에서의 연결 */
+/* path를 문자열로 복원한 뒤 공통 읽기 함수로 전달 */
+bool ok = App_GetFile(path_buf, content_buf, APP_CONTENT_MAX_LEN);
+if (!ok) {
+    SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_FILE, ERR_FILE_NOT_FOUND, NULL);
+}</code></pre>
+          <pre><code>/* app 레이어 구현 예시 */
+bool App_GetFile(const char *path, char *out_content, uint16_t max_len)
+{
+    /* max_len 범위 안에서 텍스트 파일을 읽고 null 종료 보장 */
+    return SD_ReadFile(path, out_content, max_len) == 0;
+}</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="function-card" id="functions-app-save-file">
+      <div class="function-head">
+        <span class="badge b-cmd">App 함수</span>
+        <button type="button" class="badge badge-link b-rw" onclick="openCommandDoc('commands-save-file-detail')">called by CMD_SAVE_FILE</button>
+        <span class="function-title">App_SaveFile(const char *path, const char *content)</span>
+      </div>
+      <div class="function-sub">
+        <span class="mono">CMD_SAVE_FILE</span> 요청이 들어오면 통신 레이어가 path와 content 문자열을 복원한 뒤
+        <span class="mono">App_SaveFile(path, content)</span> 을 호출합니다.
+        이 함수는 설정 파일과 Midi 파일 저장의 공통 app 진입점입니다.
+      </div>
+
+      <div class="function-grid">
+        <div class="function-block">
+          <h4>언제 호출되는가</h4>
+          <ul>
+            <li>PC가 <span class="mono">CMD_SAVE_FILE</span> 로 path와 새 content를 함께 보낼 때 호출됩니다.</li>
+            <li>통신 레이어가 path/content를 문자열로 만든 뒤 app 함수만 호출합니다.</li>
+            <li>대표 대상은 설정 파일과 Midi 설정 파일입니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>대표 사용 항목</h4>
+          <ul>
+            <li><strong>DI_ID 읽기/쓰기</strong>, <strong>반복재생 설정</strong>, <strong>반복횟수 설정</strong></li>
+            <li><strong>모터 초기화 설정</strong>, <strong>소프트 리밋</strong>, <strong>앱솔루트 설정</strong>, <strong>모터 링크</strong></li>
+            <li><strong>모터 Midi 파라미터</strong>, <strong>Midi 페이지 설정</strong></li>
+            <li>로그 읽기는 이번 범위에서 저장 대상에 포함하지 않습니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>app 코드가 해야 할 일</h4>
+          <ul>
+            <li>path가 실제 쓰기 가능한 설정/Midi 파일인지 확인합니다.</li>
+            <li>content 문자열을 대상 파일에 그대로 저장합니다.</li>
+            <li>저장 성공이면 true, 실패면 false를 반환합니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>하면 안 되는 일</h4>
+          <ul>
+            <li>content_len 계산이나 payload 검증을 app 코드에서 다시 하지 않습니다.</li>
+            <li>저장 성공 응답을 직접 만들지 않습니다.</li>
+            <li>저장 후 일치 여부 판단까지 여기서 끝내지 않고, 필요하면 Verify 경로를 사용합니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block function-block-wide">
+          <h4>레퍼런스 코드 조각</h4>
+          <pre><code>/* 통신 레이어에서의 연결 */
+/* path와 content를 복원한 뒤 공통 저장 함수로 전달 */
+bool ok = App_SaveFile(path_buf, content_buf);
+if (!ok) {
+    SendErrorResponse(ctx, src_id, (uint8_t)CMD_SAVE_FILE, ERR_FILE_NOT_FOUND, NULL);
+}</code></pre>
+          <pre><code>/* app 레이어 구현 예시 */
+bool App_SaveFile(const char *path, const char *content)
+{
+    /* 필요하면 app 레이어에서 path whitelist 검사 추가 */
+    /* 받은 문자열을 그대로 파일에 저장 */
+    return SD_WriteFile(path, content) == 0;
+}</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="function-card" id="functions-app-verify-file">
+      <div class="function-head">
+        <span class="badge b-cmd">App 함수</span>
+        <button type="button" class="badge badge-link b-rw" onclick="openCommandDoc('commands-verify-file-detail')">called by CMD_VERIFY_FILE</button>
+        <span class="function-title">App_VerifyFile(const char *path, const char *content, bool *out_match)</span>
+      </div>
+      <div class="function-sub">
+        <span class="mono">CMD_VERIFY_FILE</span> 요청이 들어오면 통신 레이어가 path와 expected content를 복원한 뒤
+        <span class="mono">App_VerifyFile(path, content, &amp;out_match)</span> 을 호출합니다.
+        이 함수는 저장된 파일 원문과 기대 문자열이 같은지 확인하는 검증용 app 진입점입니다.
+      </div>
+
+      <div class="function-grid">
+        <div class="function-block">
+          <h4>언제 호출되는가</h4>
+          <ul>
+            <li>PC가 저장 후 같은 path/content로 검증을 요청할 때 호출됩니다.</li>
+            <li>통신 레이어는 <span class="mono">bool match</span> 변수를 준비해 app 함수에 넘깁니다.</li>
+            <li>대표 대상은 설정 파일과 Midi 파일입니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>app 코드가 해야 할 일</h4>
+          <ul>
+            <li>대상 파일을 읽을 수 있으면 실제 원문과 expected content를 비교합니다.</li>
+            <li>비교를 수행할 수 있으면 true를 반환하고 결과를 <span class="mono">out_match</span> 에 기록합니다.</li>
+            <li>파일을 읽을 수 없으면 false를 반환합니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>PC는 어떻게 해석하는가</h4>
+          <ul>
+            <li>함수가 true를 반환하면 응답 payload의 마지막 1바이트에 match 값이 실립니다.</li>
+            <li><span class="mono">match = 0x01</span> 이면 저장 내용이 기대값과 같습니다.</li>
+            <li><span class="mono">match = 0x00</span> 이면 읽기는 성공했지만 내용은 다릅니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block">
+          <h4>하면 안 되는 일</h4>
+          <ul>
+            <li>비교 결과를 응답 바이트로 직접 포장하지 않습니다.</li>
+            <li>파일을 읽지 못했는데도 match만 false로 두고 true를 반환하지 않습니다.</li>
+            <li>읽기와 저장 로직을 이 함수에 중복 구현하지 않습니다.</li>
+          </ul>
+        </div>
+
+        <div class="function-block function-block-wide">
+          <h4>레퍼런스 코드 조각</h4>
+          <pre><code>/* 통신 레이어에서의 연결 */
+bool match = false;
+bool ok = App_VerifyFile(path_buf, content_buf, &amp;match);
+if (ok) {
+    /* 성공 시 path와 match(1byte)를 응답에 실어 보냄 */
+}</code></pre>
+          <pre><code>/* app 레이어 구현 예시 */
+bool App_VerifyFile(const char *path, const char *content, bool *out_match)
+{
+    char buffer[APP_CONTENT_MAX_LEN];
+
+    /* 먼저 실제 파일을 읽을 수 있어야 검증 가능 */
+    if (SD_ReadFile(path, buffer, sizeof(buffer)) != 0) {
+        return false;
+    }
+
+    /* 읽은 원문과 기대 문자열이 같은지 비교 */
+    *out_match = (strcmp(buffer, content) == 0);
+    return true;
+}</code></pre>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- 전체 요약 -->
+<div class="panel" id="panel-summary">
+  <table>
+    <tr><th>분류</th><th>명령어 항목</th><th>함수 항목</th><th>패킷명</th><th>방향</th><th>연관 SD 파일</th></tr>
+    <tr><td rowspan="5" style="color:var(--doc-text-info);font-weight:500">모션 제어</td><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-motion-ctrl-detail')">CMD_MOTION_CTRL</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-motion-play')">App_MotionPlay</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-motion-play')">모션 재생 (PLAY)</button></td><td><span class="badge b-cmd">PC→MCU</span></td><td><span class="mono">MT_RP, MT_CT</span></td></tr>
+    <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-motion-ctrl-detail')">CMD_MOTION_CTRL</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-motion-stop')">App_MotionStop</button></td><td>모션 정지 (STOP)</td><td><span class="badge b-cmd">PC→MCU</span></td><td>—</td></tr>
+    <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-motion-ctrl-detail')">CMD_MOTION_CTRL</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-motion-pause')">App_MotionPause</button></td><td>일시정지/재개 (PAUSE)</td><td><span class="badge b-cmd">PC→MCU</span></td><td>—</td></tr>
+    <tr><td>—</td><td>—</td><td>재생 상태 (PLAY STATUS)</td><td><span class="badge b-evt">MCU→PC</span></td><td>—</td></tr>
+    <tr><td>—</td><td>—</td><td>재생 완료 (PLAY DONE)</td><td><span class="badge b-evt">MCU→PC</span></td><td>—</td></tr>
+    <tr class="summary-break"><td rowspan="2" style="color:var(--doc-text-warning);font-weight:500">초기화</td><td>—</td><td>—</td><td>초기화 상태 (INIT STATUS)</td><td><span class="badge b-evt">MCU→PC</span></td><td><span class="mono">MT_ST, MT_AT</span></td></tr>
+    <tr><td>—</td><td>—</td><td>센서 감지 이벤트</td><td><span class="badge b-evt">MCU→PC</span></td><td><span class="mono">Log/SENSOR.TXT</span></td></tr>
+    <tr class="summary-break"><td rowspan="7" style="color:var(--doc-text-success);font-weight:500">설정 R/W</td><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-verify-file-detail')">CMD_VERIFY_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">DI_ID 읽기/쓰기</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">Setting/DI_ID.TXT</span></td></tr>
+    <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-verify-file-detail')">CMD_VERIFY_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">반복재생 설정 (MT_RP)</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">Setting/MT_RP.TXT</span></td></tr>
+    <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-verify-file-detail')">CMD_VERIFY_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">반복횟수 설정 (MT_CT)</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">Setting/MT_CT.TXT</span></td></tr>
+    <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-verify-file-detail')">CMD_VERIFY_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">모터 초기화 설정 (MT_ST)</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">Setting/MT_ST.TXT</span></td></tr>
+    <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-verify-file-detail')">CMD_VERIFY_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">소프트 리밋 (MT_LI)</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">Setting/MT_LI.TXT</span></td></tr>
+    <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-verify-file-detail')">CMD_VERIFY_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">앱솔루트 설정 (MT_AT)</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">Setting/MT_AT.TXT</span></td></tr>
+    <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-verify-file-detail')">CMD_VERIFY_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">모터 링크 (MT_LK)</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">Setting/MT_LK.TXT</span></td></tr>
+    <tr class="summary-break"><td rowspan="2" style="color:var(--doc-text-secondary);font-weight:500">Midi 설정</td><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-verify-file-detail')">CMD_VERIFY_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">모터 Midi 파라미터</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">Midi/motor/{id}.ini</span></td></tr>
+    <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-verify-file-detail')">CMD_VERIFY_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">Midi 페이지 설정</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">Midi/page/data.ini</span></td></tr>
+    <tr class="summary-break"><td rowspan="5" style="color:var(--doc-text-tertiary);font-weight:500">시스템</td><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-ping-detail')">CMD_PING</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-ping')">App_Ping</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-ping')">장치 발견 / Ping</button></td><td><span class="badge b-cmd">PC→MCU</span></td><td><span class="mono">Setting/DI_ID.TXT</span></td></tr>
+    <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-ping-detail')">CMD_PONG</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-ping')">App_Ping</button></td><td>장치 정보 응답</td><td><span class="badge b-rsp">MCU→PC</span></td><td>—</td></tr>
+    <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button></td><td>MCU 리셋 명령</td><td><span class="badge b-cmd">PC→MCU</span></td><td><span class="mono">Setting/RE_TI.TXT</span></td></tr>
+    <tr><td>—</td><td>—</td><td>에러 알림</td><td><span class="badge b-evt">MCU→PC</span></td><td><span class="mono">Log/</span></td></tr>
+    <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">로그 읽기</button></td><td><span class="badge b-cmd">PC→MCU</span></td><td><span class="mono">Log/BOOT, SENSOR</span></td></tr>
+  </table>
+</div>
+</div>
+
+<script>
+function switchTab(id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const tab = document.querySelector('.tab[data-tab="'+id+'"]');
+  const panel = document.getElementById('panel-'+id);
+  if (tab) tab.classList.add('active');
+  if (panel) panel.classList.add('active');
+}
+
+function openFunctionDoc(anchorId){
+  switchTab('functions');
+  const target = document.getElementById(anchorId);
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function openCommandDoc(anchorId){
+  switchTab('commands');
+  const target = document.getElementById(anchorId);
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function escapeHtml(text){
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function applyFunctionCodeHighlighting(){
+  const blocks = document.querySelectorAll('#panel-functions pre code');
+  blocks.forEach((block) => {
+    if (block.dataset.highlighted === 'true') return;
+
+    const raw = block.textContent || '';
+    let html = escapeHtml(raw);
+    const tokens = [];
+
+    html = html.replace(/\/\*[\s\S]*?\*\//g, (match) => {
+      const key = `___TOK${tokens.length}___`;
+      tokens.push(`<span class="tok-comment">${match}</span>`);
+      return key;
+    });
+
+    html = html.replace(/"(?:\\.|[^"\\])*"/g, (match) => {
+      const key = `___TOK${tokens.length}___`;
+      tokens.push(`<span class="tok-string">${match}</span>`);
+      return key;
+    });
+
+    html = html.replace(/\b(case|if|return|break|true|false|const)\b/g, '<span class="tok-keyword">$1</span>');
+    html = html.replace(/\b(bool|char|uint8_t|uint16_t|uint32_t)\b/g, '<span class="tok-type">$1</span>');
+    html = html.replace(/\b(App_[A-Za-z0-9_]+|Motion_[A-Za-z0-9_]+|Device_[A-Za-z0-9_]+|SD_[A-Za-z0-9_]+|SendBinaryResponse|SendErrorResponse|read_u32le|strcmp)\b(?=\s*\()/g, '<span class="tok-func">$1</span>');
+    html = html.replace(/\b(MOTION_ACTION_[A-Z_]+|CMD_PING|CMD_PONG|CMD_MOTION_CTRL|CMD_GET_FILE|CMD_SAVE_FILE|CMD_VERIFY_FILE|STATUS_OK|ERR_INVALID_INPUT|ERR_FILE_NOT_FOUND|MY_DEVICE_ID|APP_CONTENT_MAX_LEN|NULL)\b/g, '<span class="tok-const">$1</span>');
+    html = html.replace(/\b(0x[0-9A-Fa-f]+|\d+u?)\b/g, '<span class="tok-number">$1</span>');
+
+    html = html.replace(/___TOK(\d+)___/g, (_, index) => tokens[Number(index)]);
+
+    block.innerHTML = html;
+    block.dataset.highlighted = 'true';
+    const pre = block.closest('pre');
+    if (pre) pre.classList.add('syntax-ready');
+  });
+}
+
+applyFunctionCodeHighlighting();
+</script>
