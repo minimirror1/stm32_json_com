@@ -254,6 +254,15 @@ tr.summary-break td{padding-top:.85rem;background-image:linear-gradient(to right
 <!-- 명령어 일람 -->
 <div class="panel" id="panel-commands">
   <div class="section-note">
+    <strong>Code-truth snapshot (from current source)</strong><br>
+    Request cmds: <span class="mono">CMD_PING(0x01), CMD_MOVE(0x03), CMD_MOTION_CTRL(0x04), CMD_GET_MOTORS(0x10), CMD_GET_MOTOR_STATE(0x11), CMD_GET_FILES(0x20), CMD_GET_FILE(0x21), CMD_SAVE_FILE(0x22), CMD_VERIFY_FILE(0x23)</span><br>
+    Response cmds: <span class="mono">CMD_PONG(0x02), CMD_ERROR(0xFF)</span><br>
+    TX busy behavior: one pending response slot is queued and flushed later in <span class="mono">BIN_COM_Process/Tick</span>.
+    If that slot is already occupied, additional responses are dropped and
+    <span class="mono">tx_busy_drop_count</span> increments.<br>
+    This snapshot is the authoritative source when it differs from older sections below.
+  </div>
+  <div class="section-note">
     이 탭은 실제 wire command를 빠르게 훑어보는 명령 목록과 선택된 명령 상세를 함께 보여줍니다.<br>
     현재는 <strong>CMD_MOTION_CTRL / CMD_PING / CMD_GET_FILE / CMD_SAVE_FILE / CMD_VERIFY_FILE</strong>를 먼저 정리했고,
     이후 다른 cmd도 같은 방식으로 순차 추가하면 됩니다.
@@ -1373,6 +1382,11 @@ bool App_VerifyFile(const char *path, const char *content, bool *out_match)
 
 <!-- 전체 요약 -->
 <div class="panel" id="panel-summary">
+  <div class="section-note">
+    This summary table includes domain examples.
+    For exact wire behavior, use the <strong>Code-truth snapshot</strong> in the Commands tab
+    (authoritative with current <span class="mono">binary_com.h/.c</span> implementation).
+  </div>
   <table>
     <tr><th>분류</th><th>명령어 항목</th><th>함수 항목</th><th>패킷명</th><th>방향</th><th>연관 SD 파일</th></tr>
     <tr><td rowspan="3" style="color:var(--doc-text-info);font-weight:500">모션 제어</td><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-motion-ctrl-detail')">CMD_MOTION_CTRL</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-motion-play')">App_MotionPlay</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-motion-play')">모션 재생 (PLAY)</button></td><td><span class="badge b-cmd">PC→MCU</span></td><td><span class="mono">MT_RP, MT_CT</span></td></tr>
