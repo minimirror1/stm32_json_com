@@ -116,26 +116,21 @@ tr.summary-break td{padding-top:.85rem;background-image:linear-gradient(to right
   </div>
 
   <div class="group">
-    <div class="group-title">재생 상태 — MCU가 PC에 주기적으로 또는 변화 시 전송</div>
+    <div class="group-title">상태 조회 통합 — CMD_PING / CMD_PONG payload 로 대체</div>
     <div class="pkt">
-      <div class="pkt-top"><span class="badge b-evt">MCU→PC 이벤트</span><span class="pkt-name">모션 재생 상태 (PLAY STATUS)</span></div>
-      <div class="pkt-desc">현재 재생 상태를 PC UI에 표시하기 위한 패킷. 상태 변화 시 또는 주기적으로 전송.</div>
-      <div class="pkt-detail">포함 데이터 → 현재 상태(재생중/정지/일시정지/초기화중), 현재 재생 파일 인덱스, 현재 반복 횟수/남은 횟수, 진행률(%)</div>
+      <div class="pkt-top"><span class="badge b-rsp">MCU→PC 응답</span><span class="pkt-name">PONG 상태 응답으로 통합</span></div>
+      <div class="pkt-desc">기존 <span class="mono">PLAY STATUS</span>, <span class="mono">PLAY DONE</span>, <span class="mono">INIT STATUS</span> 는 별도 이벤트 대신 <span class="mono">CMD_PING</span> 요청에 대한 <span class="mono">CMD_PONG</span> payload 로 통합합니다.</div>
+      <div class="pkt-detail">payload 형식 → 상태 1byte, 초기화 상태 1byte, 현재 모션 시간 4byte(LE, ms), 전체 모션 시간 4byte(LE, ms)</div>
     </div>
     <div class="pkt">
-      <div class="pkt-top"><span class="badge b-evt">MCU→PC 이벤트</span><span class="pkt-name">모션 재생 완료 (PLAY DONE)</span></div>
-      <div class="pkt-desc">모션 1회 재생이 완료됐을 때 전송. 반복 재생 중이면 반복 카운트 포함.</div>
-      <div class="pkt-detail">포함 데이터 → 완료된 파일 인덱스, 완료된 반복 횟수, 남은 반복 횟수</div>
+      <div class="pkt-top"><span class="badge b-rsp">MCU→PC 응답</span><span class="pkt-name">PONG 상태값 정의</span></div>
+      <div class="pkt-desc">상태 1byte 값은 <span class="mono">0x00=정지</span>, <span class="mono">0x01=재생중</span>, <span class="mono">0x02=초기화 중</span>, <span class="mono">0x03=초기화 완료</span>, <span class="mono">0x04=에러</span> 로 사용합니다.</div>
+      <div class="pkt-detail">초기화 상태 1byte는 초기화 단계 코드용 예약 필드이며, 세부 단계값은 추후 정의 예정입니다.</div>
     </div>
   </div>
 
   <div class="group">
-    <div class="group-title">초기화 상태 — 부팅 시 MCU 초기화 과정 모니터링</div>
-    <div class="pkt">
-      <div class="pkt-top"><span class="badge b-evt">MCU→PC 이벤트</span><span class="pkt-name">초기화 진행 상태 (INIT STATUS)</span></div>
-      <div class="pkt-desc"><button type="button" class="pkt-link" onclick="openFunctionDoc('functions-app-get-file')">MT_ST</button>의 초기화 단계(센서 찍기, 초기위치 이동 등) 진행 상황. <button type="button" class="pkt-link" onclick="openFunctionDoc('functions-app-get-file')">Log/BOOT.TXT</button>에 기록되는 부팅 패킷과 연계됨.</div>
-      <div class="pkt-detail">포함 데이터 → 초기화 단계(1~4단계), 현재 처리 중인 모터 ID.SUB_id, 성공/실패 여부</div>
-    </div>
+    <div class="group-title">초기화 상태 및 센서 로그</div>
     <div class="pkt">
       <div class="pkt-top"><span class="badge b-evt">MCU→PC 이벤트</span><span class="pkt-name">센서 감지 이벤트 (SENSOR EVENT)</span></div>
       <div class="pkt-desc"><button type="button" class="pkt-link" onclick="openFunctionDoc('functions-app-get-file')">Log/SENSOR.TXT</button>에 기록되는 센서 감지 패킷. <button type="button" class="pkt-link" onclick="openFunctionDoc('functions-app-get-file')">MT_AT</button>의 absolute_data=0인 모터 대상.</div>
@@ -219,13 +214,13 @@ tr.summary-break td{padding-top:.85rem;background-image:linear-gradient(to right
     <div class="group-title">연결 및 장치 확인</div>
     <div class="pkt">
       <div class="pkt-top"><span class="badge b-cmd">PC→MCU 명령</span><span class="pkt-name">장치 발견 / Ping (DISCOVERY)</span></div>
-      <div class="pkt-desc">PC가 Zigbee 네트워크에서 MCU를 찾기 위한 브로드캐스트 또는 단일 요청. DI_ID 기반으로 장치를 식별.</div>
-      <div class="pkt-detail">응답 데이터 → DI_ID, 펌웨어 버전, MCU 현재 상태, Master/Slave 역할</div>
+      <div class="pkt-desc">PC가 Zigbee 네트워크에서 MCU를 찾기 위한 브로드캐스트 또는 단일 요청. 동시에 현재 상태를 조회하는 공통 명령으로 사용합니다.</div>
+      <div class="pkt-detail">응답 payload 목표 형식 → 상태 1byte, 초기화 상태 1byte, 현재/전체 모션 시간 4+4 byte(LE, ms)</div>
     </div>
     <div class="pkt">
-      <div class="pkt-top"><span class="badge b-rsp">MCU→PC 응답</span><span class="pkt-name">장치 정보 응답 (DEVICE INFO)</span></div>
-      <div class="pkt-desc">DISCOVERY 요청에 대한 응답. 처음 연결 시 PC가 MCU 전체 구성을 파악하는 데 사용.</div>
-      <div class="pkt-detail">포함 데이터 → DI_ID, FW 버전, 현재 상태, MS 역할, 연결된 모터 수</div>
+      <div class="pkt-top"><span class="badge b-rsp">MCU→PC 응답</span><span class="pkt-name">PONG 상태 응답 (DEVICE STATUS)</span></div>
+      <div class="pkt-desc">DISCOVERY 요청에 대한 응답. 문서 기준으로 현재 상태, 초기화 진행 상태, 모션 시간 정보를 하나의 payload 로 전달합니다.</div>
+      <div class="pkt-detail">포함 데이터 → <span class="mono">state(1)</span>, <span class="mono">init_state(1)</span>, <span class="mono">current_ms(4 LE)</span>, <span class="mono">total_ms(4 LE)</span></div>
     </div>
   </div>
 
@@ -425,8 +420,8 @@ tr.summary-break td{padding-top:.85rem;background-image:linear-gradient(to right
       </div>
       <div class="function-sub">
         <span class="mono">CMD_PING</span>은 장치가 살아 있고 통신 가능 상태인지 확인하는 기본 명령입니다.
-        현재 binary 구현 기준으로 성공 시 <span class="mono">CMD_PONG</span>를 payload 없이 돌려주며,
-        문서 상단의 장치 정보 응답 같은 추가 payload는 아직 이 cmd에 포함되지 않습니다.
+        문서 기준으로 성공 시 <span class="mono">CMD_PONG</span> payload 안에 현재 상태, 초기화 상태, 모션 시간을 함께 담아 응답합니다.
+        현재 C 구현은 아직 payload 없는 pong 이지만, 이 문서는 목표 wire 형식을 우선 설명합니다.
       </div>
 
       <div class="function-grid">
@@ -441,30 +436,33 @@ tr.summary-break td{padding-top:.85rem;background-image:linear-gradient(to right
         </div>
 
         <div class="function-block">
-          <h4>현재 구현 기준 응답</h4>
+          <h4>PONG payload 형식</h4>
           <ul>
             <li>성공 시 응답 cmd는 <span class="mono">CMD_PONG(0x02)</span> 입니다.</li>
-            <li>성공 응답은 <span class="mono">STATUS_OK</span>, <span class="mono">payload_len = 0</span> 입니다.</li>
-            <li>즉 현재 binary 구현에서는 DI_ID, FW 버전, 상태 정보를 payload로 싣지 않습니다.</li>
+            <li>문서 목표 형식의 성공 응답은 <span class="mono">STATUS_OK</span>, <span class="mono">payload_len = 10</span> 입니다.</li>
+            <li>payload 순서는 <span class="mono">state(1) | init_state(1) | current_ms(4 LE) | total_ms(4 LE)</span> 입니다.</li>
             <li>실패 시에는 에러 응답으로 처리됩니다.</li>
           </ul>
         </div>
 
         <div class="function-block">
-          <h4>대표 사용 항목</h4>
+          <h4>상태값 정의</h4>
           <ul>
-            <li><strong>장치 발견 / Ping</strong> 항목이 이 cmd에 직접 대응합니다.</li>
-            <li>PC는 네트워크에서 응답 가능한 장치를 찾기 위해 ping을 보냅니다.</li>
-            <li>현재 프로젝트에서는 장치 정보 조회보다 "응답 여부 확인" 성격이 더 강합니다.</li>
+            <li><span class="mono">0x00 = 정지</span></li>
+            <li><span class="mono">0x01 = 재생중</span></li>
+            <li><span class="mono">0x02 = 초기화 중</span></li>
+            <li><span class="mono">0x03 = 초기화 완료</span></li>
+            <li><span class="mono">0x04 = 에러</span></li>
           </ul>
         </div>
 
         <div class="function-block">
-          <h4>공통 처리 흐름</h4>
+          <h4>초기화 상태 / 시간 필드</h4>
           <ul>
-            <li>통신 레이어가 <span class="mono">CMD_PING</span> 을 확인하면 <span class="mono">App_Ping()</span> 을 호출합니다.</li>
-            <li><span class="mono">App_Ping()</span> 이 true를 반환하면 <span class="mono">CMD_PONG</span> 성공 응답을 보냅니다.</li>
-            <li>false를 반환하면 실패로 간주하고 에러 응답을 보냅니다.</li>
+            <li><span class="mono">init_state</span> 1byte는 초기화 단계 코드용 필드입니다.</li>
+            <li>세부 단계값은 아직 미정이며, 문서에는 "초기화 단계 정의 예정"으로 유지합니다.</li>
+            <li><span class="mono">current_ms</span>, <span class="mono">total_ms</span> 는 모두 <span class="mono">uint32 little-endian</span> 입니다.</li>
+            <li>시간 단위는 <span class="mono">ms</span> 입니다.</li>
           </ul>
         </div>
 
@@ -477,14 +475,18 @@ tr.summary-break td{padding-top:.85rem;background-image:linear-gradient(to right
 FF = tar_id (broadcast)
 01 = CMD_PING
 00 00 = payload_len (LE)</code></pre>
-          <pre><code>/* MCU -> PC : pong success */
-0A 00 02 00 00 00
+          <pre><code>/* MCU -> PC : pong success (문서 목표 형식) */
+0A 00 02 00 0A 00 01 00 20 03 00 00 88 13 00 00
 
 0A = src_id (example device id)
 00 = tar_id (PC)
 02 = CMD_PONG
 00 = STATUS_OK
-00 00 = payload_len (LE)</code></pre>
+0A 00 = payload_len = 10 (LE)
+01 = state = 재생중
+00 = init_state = reserved
+20 03 00 00 = current_ms = 800 (LE)
+88 13 00 00 = total_ms = 5000 (LE)</code></pre>
         </div>
       </div>
     </section>
@@ -1092,7 +1094,7 @@ bool App_MotionPlay(uint8_t device_id)
           <ul>
             <li>true 반환 시 통신 레이어가 <span class="mono">CMD_PONG</span> 성공 응답을 보냅니다.</li>
             <li>false 반환 시 에러 응답으로 처리됩니다.</li>
-            <li>현재 binary 구현 기준으로 PONG payload는 비어 있습니다.</li>
+            <li>문서 목표 형식에서는 PONG payload 안에 <span class="mono">state / init_state / current_ms / total_ms</span> 가 담깁니다.</li>
           </ul>
         </div>
 
@@ -1100,23 +1102,49 @@ bool App_MotionPlay(uint8_t device_id)
           <h4>하면 안 되는 일</h4>
           <ul>
             <li>PONG 프레임을 app 코드에서 직접 만들지 않습니다.</li>
-            <li>DI_ID, FW 버전 등 추가 payload를 여기서 임의로 붙이지 않습니다.</li>
+            <li>문서 범위를 넘는 임의 상태값이나 byte 순서를 app 코드에서 독단적으로 정하지 않습니다.</li>
             <li>ping 용도를 모션/파일 명령과 섞지 않습니다.</li>
           </ul>
         </div>
 
         <div class="function-block function-block-wide">
           <h4>레퍼런스 코드 조각</h4>
-          <pre><code>/* 통신 레이어에서의 연결 */
+          <pre><code>/* 현재 구현의 통신 레이어 연결 */
 bool ok = App_Ping();
 if (ok) {
-    /* 응답 가능하면 payload 없는 CMD_PONG 성공 응답 */
+    /* 현재 구현은 payload 없는 CMD_PONG 성공 응답 */
     SendBinaryResponse(ctx, src_id, (uint8_t)CMD_PONG, STATUS_OK, NULL, 0u);
 }</code></pre>
-          <pre><code>/* app 레이어 구현 예시 */
+          <pre><code>/* 문서 목표 형식의 PONG payload 예시 */
+payload[0] = 0x01;        /* state = 재생중 */
+payload[1] = 0x00;        /* init_state = reserved */
+payload[2..5] = 800 ms;   /* current_ms, uint32 LE */
+payload[6..9] = 5000 ms;  /* total_ms, uint32 LE */</code></pre>
+          <pre><code>/* app 레이어 최대 구현 예시 */
 bool App_Ping(void)
 {
-    /* 최소 구현은 "지금 응답 가능한가"만 판단하면 충분 */
+    MotionStatus status;
+    InitStage init_stage;
+    uint32_t current_ms;
+    uint32_t total_ms;
+
+    /* 1) 현재 모션 상태 수집: 정지/재생중/초기화 중/초기화 완료/에러 */
+    status = Motion_GetStatus();
+
+    /* 2) 초기화 단계 수집: 세부 값 정의는 추후 문서화 예정 */
+    init_stage = Motion_GetInitStage();
+
+    /* 3) 진행 시간과 전체 시간 수집: 단위는 ms */
+    current_ms = Motion_GetCurrentTimeMs();
+    total_ms = Motion_GetTotalTimeMs();
+
+    /* 4) 통신 레이어가 CMD_PONG payload를 채울 수 있도록 최신 상태를 반영 */
+    g_ping_snapshot.state = (uint8_t)status;
+    g_ping_snapshot.init_state = (uint8_t)init_stage;
+    g_ping_snapshot.current_ms = current_ms;
+    g_ping_snapshot.total_ms = total_ms;
+
+    /* 5) 지금 응답 가능한 상태면 true 반환 */
     return true;
 }</code></pre>
         </div>
@@ -1342,13 +1370,11 @@ bool App_VerifyFile(const char *path, const char *content, bool *out_match)
 <div class="panel" id="panel-summary">
   <table>
     <tr><th>분류</th><th>명령어 항목</th><th>함수 항목</th><th>패킷명</th><th>방향</th><th>연관 SD 파일</th></tr>
-    <tr><td rowspan="5" style="color:var(--doc-text-info);font-weight:500">모션 제어</td><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-motion-ctrl-detail')">CMD_MOTION_CTRL</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-motion-play')">App_MotionPlay</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-motion-play')">모션 재생 (PLAY)</button></td><td><span class="badge b-cmd">PC→MCU</span></td><td><span class="mono">MT_RP, MT_CT</span></td></tr>
+    <tr><td rowspan="3" style="color:var(--doc-text-info);font-weight:500">모션 제어</td><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-motion-ctrl-detail')">CMD_MOTION_CTRL</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-motion-play')">App_MotionPlay</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-motion-play')">모션 재생 (PLAY)</button></td><td><span class="badge b-cmd">PC→MCU</span></td><td><span class="mono">MT_RP, MT_CT</span></td></tr>
     <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-motion-ctrl-detail')">CMD_MOTION_CTRL</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-motion-stop')">App_MotionStop</button></td><td>모션 정지 (STOP)</td><td><span class="badge b-cmd">PC→MCU</span></td><td>—</td></tr>
     <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-motion-ctrl-detail')">CMD_MOTION_CTRL</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-motion-pause')">App_MotionPause</button></td><td>일시정지/재개 (PAUSE)</td><td><span class="badge b-cmd">PC→MCU</span></td><td>—</td></tr>
-    <tr><td>—</td><td>—</td><td>재생 상태 (PLAY STATUS)</td><td><span class="badge b-evt">MCU→PC</span></td><td>—</td></tr>
-    <tr><td>—</td><td>—</td><td>재생 완료 (PLAY DONE)</td><td><span class="badge b-evt">MCU→PC</span></td><td>—</td></tr>
-    <tr class="summary-break"><td rowspan="2" style="color:var(--doc-text-warning);font-weight:500">초기화</td><td>—</td><td>—</td><td>초기화 상태 (INIT STATUS)</td><td><span class="badge b-evt">MCU→PC</span></td><td><span class="mono">MT_ST, MT_AT</span></td></tr>
-    <tr><td>—</td><td>—</td><td>센서 감지 이벤트</td><td><span class="badge b-evt">MCU→PC</span></td><td><span class="mono">Log/SENSOR.TXT</span></td></tr>
+    <tr class="summary-break"><td rowspan="1" style="color:var(--doc-text-warning);font-weight:500">상태 조회</td><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-ping-detail')">CMD_PING / CMD_PONG</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-ping')">App_Ping</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-ping')">상태 조회 / PONG 상태 응답</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">state, init_state, current_ms, total_ms</span></td></tr>
+    <tr class="summary-break"><td rowspan="1" style="color:var(--doc-text-warning);font-weight:500">이벤트</td><td>—</td><td>—</td><td>센서 감지 이벤트</td><td><span class="badge b-evt">MCU→PC</span></td><td><span class="mono">Log/SENSOR.TXT</span></td></tr>
     <tr class="summary-break"><td rowspan="7" style="color:var(--doc-text-success);font-weight:500">설정 R/W</td><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-verify-file-detail')">CMD_VERIFY_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">DI_ID 읽기/쓰기</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">Setting/DI_ID.TXT</span></td></tr>
     <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-verify-file-detail')">CMD_VERIFY_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">반복재생 설정 (MT_RP)</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">Setting/MT_RP.TXT</span></td></tr>
     <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-verify-file-detail')">CMD_VERIFY_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">반복횟수 설정 (MT_CT)</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">Setting/MT_CT.TXT</span></td></tr>
@@ -1359,7 +1385,7 @@ bool App_VerifyFile(const char *path, const char *content, bool *out_match)
     <tr class="summary-break"><td rowspan="2" style="color:var(--doc-text-secondary);font-weight:500">Midi 설정</td><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-verify-file-detail')">CMD_VERIFY_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">모터 Midi 파라미터</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">Midi/motor/{id}.ini</span></td></tr>
     <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-verify-file-detail')">CMD_VERIFY_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">Midi 페이지 설정</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">Midi/page/data.ini</span></td></tr>
     <tr class="summary-break"><td rowspan="5" style="color:var(--doc-text-tertiary);font-weight:500">시스템</td><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-ping-detail')">CMD_PING</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-ping')">App_Ping</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-ping')">장치 발견 / Ping</button></td><td><span class="badge b-cmd">PC→MCU</span></td><td><span class="mono">Setting/DI_ID.TXT</span></td></tr>
-    <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-ping-detail')">CMD_PONG</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-ping')">App_Ping</button></td><td>장치 정보 응답</td><td><span class="badge b-rsp">MCU→PC</span></td><td>—</td></tr>
+    <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-ping-detail')">CMD_PONG</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-ping')">App_Ping</button></td><td>상태 응답 (PONG)</td><td><span class="badge b-rsp">MCU→PC</span></td><td><span class="mono">state, init_state, current_ms, total_ms</span></td></tr>
     <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button></td><td>MCU 리셋 명령</td><td><span class="badge b-cmd">PC→MCU</span></td><td><span class="mono">Setting/RE_TI.TXT</span></td></tr>
     <tr><td>—</td><td>—</td><td>에러 알림</td><td><span class="badge b-evt">MCU→PC</span></td><td><span class="mono">Log/</span></td></tr>
     <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">로그 읽기</button></td><td><span class="badge b-cmd">PC→MCU</span></td><td><span class="mono">Log/BOOT, SENSOR</span></td></tr>

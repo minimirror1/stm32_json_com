@@ -67,6 +67,8 @@ typedef enum {
     BIN_SEND_TX_BUSY
 } BinarySendStatus;
 
+#define BIN_PONG_PAYLOAD_SIZE  10u
+
 /* ============================================================================
  * Little-Endian Helpers
  * ============================================================================ */
@@ -120,6 +122,7 @@ static void SendErrorResponse(BinaryContext *ctx,
                               uint8_t cmd,
                               BinErrorCode code,
                               const char *msg);
+static uint8_t *WritePingStatusPayload(uint8_t *p, const AppPingStatus *status);
 
 /* ============================================================================
  * Response Sending Helpers
@@ -251,6 +254,15 @@ static void SendErrorResponse(BinaryContext *ctx,
                              STATUS_ERROR, err_payload, err_payload_len);
 }
 
+static uint8_t *WritePingStatusPayload(uint8_t *p, const AppPingStatus *status)
+{
+    p = write_u8(p, (uint8_t)status->state);
+    p = write_u8(p, status->init_state);
+    p = write_u32le(p, status->current_ms);
+    p = write_u32le(p, status->total_ms);
+    return p;
+}
+
 /* ============================================================================
  * Command Handlers
  * ============================================================================ */
@@ -259,8 +271,18 @@ static void HandlePing(BinaryContext *ctx, uint8_t src_id)
 {
     bool ok = App_Ping();
     if (ok) {
+        AppPingStatus ping_status;
+        uint8_t payload[BIN_PONG_PAYLOAD_SIZE];
+
+        if (!App_GetPingStatus(&ping_status)) {
+            SendErrorResponse(ctx, src_id, (uint8_t)CMD_PONG, ERR_UNKNOWN, NULL);
+            return;
+        }
+
+        (void)WritePingStatusPayload(payload, &ping_status);
         BinarySendStatus send_status =
-            SendBinaryResponse(ctx, src_id, (uint8_t)CMD_PONG, STATUS_OK, NULL, 0u);
+            SendBinaryResponse(ctx, src_id, (uint8_t)CMD_PONG, STATUS_OK,
+                               payload, BIN_PONG_PAYLOAD_SIZE);
         SendErrorForStatus(ctx, src_id, (uint8_t)CMD_PONG, send_status);
     } else {
         SendErrorResponse(ctx, src_id, (uint8_t)CMD_PONG, ERR_UNKNOWN, NULL);

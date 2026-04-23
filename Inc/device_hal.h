@@ -22,6 +22,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 /*******************************************************************************
  * Constants
@@ -51,6 +52,15 @@ typedef enum {
     APP_MOTOR_STATUS_OVERLOAD     = 0x02,
     APP_MOTOR_STATUS_DISCONNECTED = 0x03
 } AppMotorStatus;
+
+/** @brief Device status enum for CMD_PONG payload (wire value: uint8) */
+typedef enum {
+    APP_PING_STATE_STOPPED      = 0x00,
+    APP_PING_STATE_PLAYING      = 0x01,
+    APP_PING_STATE_INIT_BUSY    = 0x02,
+    APP_PING_STATE_INIT_DONE    = 0x03,
+    APP_PING_STATE_ERROR        = 0x04
+} AppPingState;
 
 /*******************************************************************************
  * Data Structures (Pure application data - no communication formatting)
@@ -119,6 +129,19 @@ typedef struct {
     float velocity;                       /* Current velocity */
 } AppMotorState;
 
+/**
+ * @brief Status snapshot for CMD_PONG payload
+ *
+ * Wire format:
+ *   state(1) | init_state(1) | current_ms(4 LE) | total_ms(4 LE)
+ */
+typedef struct {
+    AppPingState state;                   /* Device state for PONG payload */
+    uint8_t init_state;                   /* Initialization stage code */
+    uint32_t current_ms;                  /* Current motion time in milliseconds */
+    uint32_t total_ms;                    /* Total motion time in milliseconds */
+} AppPingStatus;
+
 /*******************************************************************************
  * Application Function Declarations (__weak stubs)
  *
@@ -137,6 +160,22 @@ typedef struct {
  *   }
  */
 bool App_Ping(void);
+
+/**
+ * @brief Get current status snapshot for CMD_PONG payload
+ * @param out_status Output status snapshot
+ * @return true on success, false on failure
+ *
+ * @example
+ *   bool App_GetPingStatus(AppPingStatus *out_status) {
+ *       out_status->state = APP_PING_STATE_STOPPED;
+ *       out_status->init_state = 0;
+ *       out_status->current_ms = 0;
+ *       out_status->total_ms = 0;
+ *       return true;
+ *   }
+ */
+bool App_GetPingStatus(AppPingStatus *out_status);
 
 /**
  * @brief Execute move command
