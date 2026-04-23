@@ -19,12 +19,14 @@
  * ============================================================================ */
 
 /**
- * @brief Find session by message ID
+ * @brief Find session by message ID and source address
  * @return Session pointer or NULL if not found
  */
-static RxSession_t* find_session(FragRxContext_t* ctx, uint16_t msg_id) {
+static RxSession_t* find_session(FragRxContext_t* ctx, uint16_t msg_id, uint64_t source_addr) {
     for (int i = 0; i < FRAG_MAX_RX_SESSIONS; i++) {
-        if (ctx->sessions[i].active && ctx->sessions[i].msg_id == msg_id) {
+        if (ctx->sessions[i].active &&
+            ctx->sessions[i].msg_id == msg_id &&
+            ctx->sessions[i].source_address == source_addr) {
             return &ctx->sessions[i];
         }
     }
@@ -39,7 +41,7 @@ static RxSession_t* get_or_create_session(FragRxContext_t* ctx, uint16_t msg_id,
                                            uint32_t total_len, uint16_t frag_cnt,
                                            uint64_t source_addr) {
     /* First, try to find existing session */
-    RxSession_t* session = find_session(ctx, msg_id);
+    RxSession_t* session = find_session(ctx, msg_id, source_addr);
     if (session) {
         return session;
     }

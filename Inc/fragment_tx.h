@@ -56,6 +56,7 @@ typedef struct {
     FragTxState_t state;        /**< Current state */
     uint32_t last_send_tick;    /**< Last fragment send time */
     uint16_t send_delay_ms;     /**< Delay between fragments */
+    uint8_t tx_storage[FRAG_MAX_MESSAGE_SIZE]; /**< Stable per-session TX buffer */
 } TxSessionEx_t;
 
 /* ============================================================================
@@ -153,8 +154,9 @@ void frag_tx_handle_nack(FragTxContext_t* ctx, const NackMessage_t* nack, uint64
  * @brief Handle incoming DONE - mark session complete
  * @param ctx Pointer to transmitter context
  * @param msg_id Message ID from DONE
+ * @param source_addr Source address (must match session destination)
  */
-void frag_tx_handle_done(FragTxContext_t* ctx, uint16_t msg_id);
+void frag_tx_handle_done(FragTxContext_t* ctx, uint16_t msg_id, uint64_t source_addr);
 
 /**
  * @brief Check if transmitter is busy (has active sessions)

@@ -153,6 +153,11 @@ static BinarySendStatus SendBinaryResponse(BinaryContext *ctx,
         return BIN_SEND_TOO_LARGE;
     }
 
+    /* Avoid overwriting tx_buffer while a previous async TX session is active. */
+    if (frag_tx_is_busy(&ctx->frag_tx)) {
+        return BIN_SEND_TX_BUSY;
+    }
+
     uint8_t *p = ctx->tx_buffer;
 
     /* Response header (6 bytes, all single-byte fields except payload_len) */
@@ -182,6 +187,11 @@ static BinarySendStatus FinalizeBufferedResponse(BinaryContext *ctx,
                                                  BinStatus status,
                                                  uint16_t payload_len)
 {
+    /* Avoid overwriting tx_buffer while a previous async TX session is active. */
+    if (frag_tx_is_busy(&ctx->frag_tx)) {
+        return BIN_SEND_TX_BUSY;
+    }
+
     uint8_t *hdr = ctx->tx_buffer;
     hdr = write_u8(hdr, ctx->my_id);
     hdr = write_u8(hdr, tar_id);
@@ -208,7 +218,10 @@ static void SendErrorForStatus(BinaryContext *ctx, uint8_t tar_id, uint8_t cmd,
             break;
 
         case BIN_SEND_TX_BUSY:
-            SendErrorResponse(ctx, tar_id, cmd, ERR_TX_BUSY, "TX busy");
+            /*
+             * Do not enqueue CMD_ERROR here: it would reuse ctx->tx_buffer
+             * and can corrupt the in-flight transmission.
+             */
             break;
 
         case BIN_SEND_OK:
@@ -812,7 +825,7 @@ static void OnXBeeFrame(const XBeeFrame_t *frame, void *user_data)
     } else if (frag_rx_is_done(rf_data, rf_data_len)) {
         uint16_t msg_id;
         if (frag_rx_parse_done(rf_data, rf_data_len, &msg_id)) {
-            frag_tx_handle_done(&ctx->frag_tx, msg_id);
+            frag_tx_handle_done(&ctx->frag_tx, msg_id, src_addr);
         }
     } else {
         /* Normal data fragment ??pass to Fragment RX reassembler */

@@ -161,7 +161,7 @@ uint16_t frag_tx_get_next_msg_id(FragTxContext_t* ctx) {
 }
 
 uint16_t frag_tx_send(FragTxContext_t* ctx, const uint8_t* data, uint32_t len, uint64_t dest_addr64) {
-    if (len == 0 || len > FRAG_MAX_MESSAGE_SIZE) {
+    if (data == NULL || len == 0 || len > FRAG_MAX_MESSAGE_SIZE) {
         if (ctx->on_log) {
             ctx->on_log("Invalid message size", ctx->callback_user_data);
         }
@@ -181,7 +181,8 @@ uint16_t frag_tx_send(FragTxContext_t* ctx, const uint8_t* data, uint32_t len, u
     memset(session, 0, sizeof(TxSessionEx_t));
     session->base.active = 1;
     session->base.msg_id = frag_tx_get_next_msg_id(ctx);
-    session->base.data = data;
+    memcpy(session->tx_storage, data, len);
+    session->base.data = session->tx_storage;
     session->base.data_len = len;
     session->base.frag_cnt = (len + ctx->payload_size - 1) / ctx->payload_size;
     if (session->base.frag_cnt == 0) {
@@ -305,10 +306,15 @@ void frag_tx_handle_nack(FragTxContext_t* ctx, const NackMessage_t* nack, uint64
     }
 }
 
-void frag_tx_handle_done(FragTxContext_t* ctx, uint16_t msg_id) {
+void frag_tx_handle_done(FragTxContext_t* ctx, uint16_t msg_id, uint64_t source_addr) {
     TxSessionEx_t* session = find_session(ctx, msg_id);
     if (!session) {
         /* Might be a duplicate DONE for already completed session */
+        return;
+    }
+
+    /* DONE source must match the original destination to avoid spoofed completion. */
+    if (session->base.dest_address != source_addr) {
         return;
     }
     
