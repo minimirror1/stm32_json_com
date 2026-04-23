@@ -69,6 +69,7 @@ static BinaryScratch_t g_binary_scratch;
 
 typedef enum {
     BIN_SEND_OK = 0,
+    BIN_SEND_QUEUED,
     BIN_SEND_TOO_LARGE,
     BIN_SEND_TX_BUSY
 } BinarySendStatus;
@@ -130,6 +131,13 @@ static void SendErrorResponse(BinaryContext *ctx,
                               const char *msg);
 static uint8_t *WritePingStatusPayload(uint8_t *p, const AppPingStatus *status);
 static void RecordTxBusyDrop(BinaryContext *ctx);
+static BinarySendStatus QueueResponseFrame(BinaryContext *ctx,
+                                           uint8_t tar_id,
+                                           uint8_t cmd,
+                                           BinStatus status,
+                                           const uint8_t *payload,
+                                           uint16_t payload_len);
+static void TryFlushPendingResponse(BinaryContext *ctx);
 static bool BoundedCStrLen(const char *s, size_t max_scan, uint16_t *out_len);
 static uint8_t BoundedLen255(const char *s);
 static bool ValidateResponsePayloadLen(uint32_t payload_len_u32,
@@ -143,6 +151,64 @@ static void RecordTxBusyDrop(BinaryContext *ctx)
         ctx->frag_tx.on_log("binary_com: TX busy, response dropped",
                             ctx->frag_tx.callback_user_data);
     }
+}
+
+static BinarySendStatus QueueResponseFrame(BinaryContext *ctx,
+                                           uint8_t tar_id,
+                                           uint8_t cmd,
+                                           BinStatus status,
+                                           const uint8_t *payload,
+                                           uint16_t payload_len)
+{
+    uint8_t *p = ctx->pending_tx_buffer;
+    uint32_t total = (uint32_t)BIN_RESP_HEADER_SIZE + (uint32_t)payload_len;
+
+    if (total > BIN_TX_BUFFER_SIZE) {
+        return BIN_SEND_TOO_LARGE;
+    }
+    if (ctx->pending_tx_valid) {
+        RecordTxBusyDrop(ctx);
+        return BIN_SEND_TX_BUSY;
+    }
+    if (payload_len > 0u && payload == NULL) {
+        RecordTxBusyDrop(ctx);
+        return BIN_SEND_TX_BUSY;
+    }
+
+    p = write_u8(p, ctx->my_id);
+    p = write_u8(p, tar_id);
+    p = write_u8(p, cmd);
+    p = write_u8(p, (uint8_t)status);
+    p = write_u16le(p, payload_len);
+    if (payload_len > 0u) {
+        memcpy(p, payload, payload_len);
+    }
+
+    ctx->pending_tx_len = total;
+    ctx->pending_tx_dest_addr = ctx->current_source_addr;
+    ctx->pending_tx_valid = true;
+    return BIN_SEND_QUEUED;
+}
+
+static void TryFlushPendingResponse(BinaryContext *ctx)
+{
+    if (!ctx->pending_tx_valid) {
+        return;
+    }
+    if (frag_tx_is_busy(&ctx->frag_tx)) {
+        return;
+    }
+
+    if (frag_tx_send(&ctx->frag_tx,
+                     ctx->pending_tx_buffer,
+                     ctx->pending_tx_len,
+                     ctx->pending_tx_dest_addr) == 0u) {
+        return;
+    }
+
+    ctx->pending_tx_valid = false;
+    ctx->pending_tx_len = 0u;
+    ctx->pending_tx_dest_addr = 0u;
 }
 
 static bool BoundedCStrLen(const char *s, size_t max_scan, uint16_t *out_len)
@@ -226,10 +292,8 @@ static BinarySendStatus SendBinaryResponse(BinaryContext *ctx,
         return BIN_SEND_TOO_LARGE;
     }
 
-    /* Avoid overwriting tx_buffer while a previous async TX session is active. */
     if (frag_tx_is_busy(&ctx->frag_tx)) {
-        RecordTxBusyDrop(ctx);
-        return BIN_SEND_TX_BUSY;
+        return QueueResponseFrame(ctx, tar_id, cmd, status, payload, payload_len);
     }
 
     uint8_t *p = ctx->tx_buffer;
@@ -249,8 +313,7 @@ static BinarySendStatus SendBinaryResponse(BinaryContext *ctx,
     ctx->tx_buffer_len = total;
     if (frag_tx_send(&ctx->frag_tx, ctx->tx_buffer, total,
                      ctx->current_source_addr) == 0u) {
-        RecordTxBusyDrop(ctx);
-        return BIN_SEND_TX_BUSY;
+        return QueueResponseFrame(ctx, tar_id, cmd, status, payload, payload_len);
     }
 
     return BIN_SEND_OK;
@@ -262,10 +325,10 @@ static BinarySendStatus FinalizeBufferedResponse(BinaryContext *ctx,
                                                  BinStatus status,
                                                  uint16_t payload_len)
 {
-    /* Avoid overwriting tx_buffer while a previous async TX session is active. */
+    const uint8_t *payload = ctx->tx_buffer + BIN_RESP_HEADER_SIZE;
+
     if (frag_tx_is_busy(&ctx->frag_tx)) {
-        RecordTxBusyDrop(ctx);
-        return BIN_SEND_TX_BUSY;
+        return QueueResponseFrame(ctx, tar_id, cmd, status, payload, payload_len);
     }
 
     uint8_t *hdr = ctx->tx_buffer;
@@ -278,8 +341,7 @@ static BinarySendStatus FinalizeBufferedResponse(BinaryContext *ctx,
     ctx->tx_buffer_len = (uint32_t)BIN_RESP_HEADER_SIZE + (uint32_t)payload_len;
     if (frag_tx_send(&ctx->frag_tx, ctx->tx_buffer, ctx->tx_buffer_len,
                      ctx->current_source_addr) == 0u) {
-        RecordTxBusyDrop(ctx);
-        return BIN_SEND_TX_BUSY;
+        return QueueResponseFrame(ctx, tar_id, cmd, status, payload, payload_len);
     }
 
     return BIN_SEND_OK;
@@ -296,11 +358,12 @@ static void SendErrorForStatus(BinaryContext *ctx, uint8_t tar_id, uint8_t cmd,
 
         case BIN_SEND_TX_BUSY:
             /*
-             * Do not enqueue CMD_ERROR here: it would reuse ctx->tx_buffer
-             * and can corrupt the in-flight transmission.
+             * BUSY while queue is already occupied:
+             * do not recurse into additional CMD_ERROR responses.
              */
             break;
 
+        case BIN_SEND_QUEUED:
         case BIN_SEND_OK:
         default:
             break;
@@ -1014,6 +1077,9 @@ void BIN_COM_Process(BinaryContext *ctx)
 
     /* Advance Fragment TX state machine (sends pending fragments) */
     frag_tx_tick(&ctx->frag_tx);
+
+    /* Flush one-slot queued response when TX session becomes available. */
+    TryFlushPendingResponse(ctx);
 }
 
 void BIN_COM_Tick(BinaryContext *ctx)
@@ -1023,6 +1089,9 @@ void BIN_COM_Tick(BinaryContext *ctx)
 
     /* Advance Fragment TX timeout handling */
     frag_tx_tick(&ctx->frag_tx);
+
+    /* Flush one-slot queued response when TX session becomes available. */
+    TryFlushPendingResponse(ctx);
 }
 
 void BIN_COM_SetDestAddress(BinaryContext *ctx, uint64_t addr64)

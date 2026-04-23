@@ -152,6 +152,12 @@ typedef struct {
     uint8_t  tx_buffer[BIN_TX_BUFFER_SIZE];
     uint32_t tx_buffer_len;
 
+    /* One-slot pending response queue for TX-busy backpressure */
+    uint8_t  pending_tx_buffer[BIN_TX_BUFFER_SIZE];
+    uint32_t pending_tx_len;
+    uint64_t pending_tx_dest_addr;
+    bool     pending_tx_valid;
+
     /* Number of responses dropped because TX was busy */
     uint32_t tx_busy_drop_count;
 } BinaryContext;
