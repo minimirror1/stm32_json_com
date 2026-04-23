@@ -517,6 +517,16 @@ FF = tar_id (broadcast)
       </div>
 
       <div class="function-grid">
+        <div class="function-block function-block-wide">
+          <h4>긴 내용 읽기 안내</h4>
+          <ul>
+            <li><span class="mono">MT_ST.TXT</span> 처럼 내용이 긴 파일도 app 레벨에서 여러 번 나눠 읽지 않습니다.</li>
+            <li>응답 payload는 끝까지 하나의 <span class="mono">CMD_GET_FILE</span> 메시지로 만들고, 전송 중 분할은 Fragment Protocol 계층이 자동 처리합니다.</li>
+            <li>PC는 fragment 조각을 따로 해석하지 말고, 재조립이 끝난 뒤 <span class="mono">path_len + path + content_len + content</span> 를 한 번에 파싱해야 합니다.</li>
+            <li>현재 코드 기준 내용 길이 제한은 <span class="mono">content_len &lt; APP_CONTENT_MAX_LEN (512)</span> 이고, 전체 binary 메시지는 <span class="mono">BIN_TX_BUFFER_SIZE / FRAG_MAX_MESSAGE_SIZE (4096)</span> 이하여야 합니다.</li>
+            <li>예를 들어 <span class="mono">Setting/MT_ST.TXT</span> 내용이 약 446 byte이면 wire에서는 여러 fragment로 나뉘어도 의미상 1개의 파일 읽기 응답입니다.</li>
+          </ul>
+        </div>
         <div class="function-block">
           <h4>명령 개요</h4>
           <ul>
@@ -589,6 +599,16 @@ Setting/DI_ID.TXT = path
       </div>
 
       <div class="function-grid">
+        <div class="function-block function-block-wide">
+          <h4>긴 내용 쓰기 안내</h4>
+          <ul>
+            <li><span class="mono">MT_ST.TXT</span> 처럼 긴 설정값도 PC가 여러 개의 <span class="mono">CMD_SAVE_FILE</span> 요청으로 쪼개 보내는 방식이 아닙니다.</li>
+            <li>PC는 <span class="mono">path_len + path + content_len + content</span> 전체를 1개의 binary 요청으로 구성해야 합니다.</li>
+            <li>전송 중 fragment 분할은 통신 스택이 자동 수행하므로, host/app 코드에서 별도 chunk 번호나 이어붙이기 규칙을 두지 않습니다.</li>
+            <li>수신 측은 fragment 재조립이 끝난 뒤에만 <span class="mono">CMD_SAVE_FILE</span> payload를 파싱하고 <span class="mono">App_SaveFile(path, content)</span> 을 호출합니다.</li>
+            <li>현재 코드 기준 요청 내용 길이 제한은 <span class="mono">content_len &lt; APP_CONTENT_MAX_LEN (512)</span> 입니다.</li>
+          </ul>
+        </div>
         <div class="function-block">
           <h4>명령 개요</h4>
           <ul>
