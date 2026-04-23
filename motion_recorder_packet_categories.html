@@ -420,8 +420,8 @@ tr.summary-break td{padding-top:.85rem;background-image:linear-gradient(to right
       </div>
       <div class="function-sub">
         <span class="mono">CMD_PING</span>은 장치가 살아 있고 통신 가능 상태인지 확인하는 기본 명령입니다.
-        문서 기준으로 성공 시 <span class="mono">CMD_PONG</span> payload 안에 현재 상태, 초기화 상태, 모션 시간을 함께 담아 응답합니다.
-        현재 C 구현은 아직 payload 없는 pong 이지만, 이 문서는 목표 wire 형식을 우선 설명합니다.
+        현재 구현 기준으로 성공 시 <span class="mono">CMD_PONG</span> payload 안에 현재 상태, 초기화 상태, 모션 시간을 함께 담아 응답합니다.
+        즉, PONG 응답은 <span class="mono">payload_len = 10</span> 형태로 동작합니다.
       </div>
 
       <div class="function-grid">
@@ -439,7 +439,7 @@ tr.summary-break td{padding-top:.85rem;background-image:linear-gradient(to right
           <h4>PONG payload 형식</h4>
           <ul>
             <li>성공 시 응답 cmd는 <span class="mono">CMD_PONG(0x02)</span> 입니다.</li>
-            <li>문서 목표 형식의 성공 응답은 <span class="mono">STATUS_OK</span>, <span class="mono">payload_len = 10</span> 입니다.</li>
+            <li>현재 구현의 성공 응답은 <span class="mono">STATUS_OK</span>, <span class="mono">payload_len = 10</span> 입니다.</li>
             <li>payload 순서는 <span class="mono">state(1) | init_state(1) | current_ms(4 LE) | total_ms(4 LE)</span> 입니다.</li>
             <li>실패 시에는 에러 응답으로 처리됩니다.</li>
           </ul>
@@ -475,7 +475,7 @@ tr.summary-break td{padding-top:.85rem;background-image:linear-gradient(to right
 FF = tar_id (broadcast)
 01 = CMD_PING
 00 00 = payload_len (LE)</code></pre>
-          <pre><code>/* MCU -> PC : pong success (문서 목표 형식) */
+          <pre><code>/* MCU -> PC : pong success (현재 구현) */
 0A 00 02 00 0A 00 01 00 20 03 00 00 88 13 00 00
 
 0A = src_id (example device id)
@@ -1094,7 +1094,7 @@ bool App_MotionPlay(uint8_t device_id)
           <ul>
             <li>true 반환 시 통신 레이어가 <span class="mono">CMD_PONG</span> 성공 응답을 보냅니다.</li>
             <li>false 반환 시 에러 응답으로 처리됩니다.</li>
-            <li>문서 목표 형식에서는 PONG payload 안에 <span class="mono">state / init_state / current_ms / total_ms</span> 가 담깁니다.</li>
+            <li>현재 구현에서 PONG payload 안에 <span class="mono">state / init_state / current_ms / total_ms</span> 가 담깁니다.</li>
           </ul>
         </div>
 
@@ -1112,10 +1112,15 @@ bool App_MotionPlay(uint8_t device_id)
           <pre><code>/* 현재 구현의 통신 레이어 연결 */
 bool ok = App_Ping();
 if (ok) {
-    /* 현재 구현은 payload 없는 CMD_PONG 성공 응답 */
-    SendBinaryResponse(ctx, src_id, (uint8_t)CMD_PONG, STATUS_OK, NULL, 0u);
+    AppPingStatus ping_status;
+    uint8_t payload[10];
+
+    if (App_GetPingStatus(&ping_status)) {
+        WritePingStatusPayload(payload, &ping_status);
+        SendBinaryResponse(ctx, src_id, (uint8_t)CMD_PONG, STATUS_OK, payload, 10u);
+    }
 }</code></pre>
-          <pre><code>/* 문서 목표 형식의 PONG payload 예시 */
+          <pre><code>/* 현재 구현의 PONG payload 예시 */
 payload[0] = 0x01;        /* state = 재생중 */
 payload[1] = 0x00;        /* init_state = reserved */
 payload[2..5] = 800 ms;   /* current_ms, uint32 LE */
