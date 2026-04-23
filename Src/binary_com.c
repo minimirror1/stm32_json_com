@@ -5,7 +5,7 @@
  *      Author: AI Assistant
  *
  *  Binary Communication Library (Binary Protocol v1.0)
- *  Replaces json_com.c ??same Fragment Protocol / XBee API stack, binary payload.
+ *  Uses the existing Fragment Protocol / XBee API stack with binary payload.
  *
  *  Endianness:
  *    - Application payload (this file): Little-Endian

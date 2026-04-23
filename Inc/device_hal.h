@@ -5,7 +5,7 @@
  *      Author: AI Assistant
  *
  *  Application Hardware Abstraction Layer
- *  - Defines interface between JSON communication library and application implementation
+ *  - Defines interface between binary communication library and application implementation
  *  - All App_* functions are __weak stubs that developers override
  *
  *  ============================================================================
@@ -13,7 +13,7 @@
  *  ============================================================================
  *  - App_* functions handle PURE APPLICATION LOGIC only
  *  - NO communication parsing or response formatting in App_* functions
- *  - Communication layer (json_com.c) handles all JSON parsing/response building
+ *  - Communication layer (binary_com.c) handles packet parsing/response building
  *  ============================================================================
  */
 

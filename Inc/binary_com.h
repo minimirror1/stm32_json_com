@@ -5,7 +5,7 @@
  *      Author: AI Assistant
  *
  *  Binary Communication Library (Binary Protocol v1.0)
- *  Replaces json_com.h ??same Fragment Protocol / XBee API stack, binary payload.
+ *  Uses the existing Fragment Protocol / XBee API stack with binary payload.
  *
  *  Request Header  (5 bytes, Little-Endian):
  *    src_id(1) | tar_id(1) | cmd(1) | payload_len(2 LE)
