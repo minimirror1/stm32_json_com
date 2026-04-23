@@ -14,6 +14,12 @@
  *  All multi-byte values in the binary application payload use explicit
  *  read_u16le / write_u16le helpers ??never rely on struct member ordering
  *  or pointer casting for LE conversion.
+ *
+ *  Safety hardening note (for future maintenance):
+ *  - Treat App_* return count as untrusted input even though it is internal.
+ *  - Reject count > APP_MAX_* before any array access or loop iteration.
+ *  - Compute payload length in uint32_t first, verify bounds, then cast to uint16_t.
+ *  - Avoid early uint16_t casts in length arithmetic to prevent wraparound bugs.
  */
 
 #include "binary_com.h"
@@ -126,6 +132,8 @@ static uint8_t *WritePingStatusPayload(uint8_t *p, const AppPingStatus *status);
 static void RecordTxBusyDrop(BinaryContext *ctx);
 static bool BoundedCStrLen(const char *s, size_t max_scan, uint16_t *out_len);
 static uint8_t BoundedLen255(const char *s);
+static bool ValidateResponsePayloadLen(uint32_t payload_len_u32,
+                                       uint16_t *payload_len_out);
 
 static void RecordTxBusyDrop(BinaryContext *ctx)
 {
@@ -170,6 +178,23 @@ static uint8_t BoundedLen255(const char *s)
     }
 
     return (uint8_t)len;
+}
+
+static bool ValidateResponsePayloadLen(uint32_t payload_len_u32,
+                                       uint16_t *payload_len_out)
+{
+    if (payload_len_out == NULL) {
+        return false;
+    }
+    if (payload_len_u32 > UINT16_MAX) {
+        return false;
+    }
+    if ((uint32_t)BIN_RESP_HEADER_SIZE + payload_len_u32 > BIN_TX_BUFFER_SIZE) {
+        return false;
+    }
+
+    *payload_len_out = (uint16_t)payload_len_u32;
+    return true;
 }
 
 /* ============================================================================
@@ -457,8 +482,9 @@ static void HandleGetMotors(BinaryContext *ctx, uint8_t src_id)
      *   min_angle(2 LE ×10 int16) max_angle(2 LE ×10 int16)
      *   min_raw(2 LE) max_raw(2 LE)
      */
-    uint16_t payload_len = (uint16_t)(1u + (uint32_t)count * 17u);
-    if ((uint32_t)BIN_RESP_HEADER_SIZE + payload_len > BIN_TX_BUFFER_SIZE) {
+    uint32_t payload_len_u32 = 1u + (uint32_t)count * 17u;
+    uint16_t payload_len = 0u;
+    if (!ValidateResponsePayloadLen(payload_len_u32, &payload_len)) {
         SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_MOTORS,
                           ERR_RESPONSE_TOO_LARGE, "Response too large");
         return;
@@ -507,8 +533,9 @@ static void HandleGetMotorState(BinaryContext *ctx, uint8_t src_id)
      * Payload: motor_count(1) + states[] each 6 bytes
      *   id(1) position(2 LE) velocity(2 LE ×100) status(1)
      */
-    uint16_t payload_len = (uint16_t)(1u + (uint32_t)count * 6u);
-    if ((uint32_t)BIN_RESP_HEADER_SIZE + payload_len > BIN_TX_BUFFER_SIZE) {
+    uint32_t payload_len_u32 = 1u + (uint32_t)count * 6u;
+    uint16_t payload_len = 0u;
+    if (!ValidateResponsePayloadLen(payload_len_u32, &payload_len)) {
         SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_MOTOR_STATE,
                           ERR_RESPONSE_TOO_LARGE, "Response too large");
         return;
@@ -593,7 +620,13 @@ static void HandleGetFiles(BinaryContext *ctx, uint8_t src_id)
         p += path_len;
     }
 
-    uint16_t payload_len = (uint16_t)(p - payload_start);
+    uint32_t payload_len_u32 = (uint32_t)(p - payload_start);
+    uint16_t payload_len = 0u;
+    if (!ValidateResponsePayloadLen(payload_len_u32, &payload_len)) {
+        SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_FILES,
+                          ERR_RESPONSE_TOO_LARGE, "Response too large");
+        return;
+    }
 
     SendErrorForStatus(ctx, src_id, (uint8_t)CMD_GET_FILES,
                        FinalizeBufferedResponse(ctx, src_id,
