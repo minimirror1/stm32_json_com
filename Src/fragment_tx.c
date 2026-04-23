@@ -240,11 +240,9 @@ void frag_tx_tick(FragTxContext_t* ctx) {
                 break;
                 
             case FRAG_TX_STATE_WAITING_DONE:
-                /* Timeout waiting for DONE - considered success anyway */
-                /* (receiver might have sent DONE but we didn't receive it) */
+                /* Timeout waiting for DONE is treated as failure. */
                 if (now - session->last_send_tick > FRAG_TIMEOUT_MS * 2) {
-                    /* In a real implementation, we might retry or wait longer */
-                    complete_session(ctx, session, true);
+                    complete_session(ctx, session, false);
                 }
                 break;
                 

@@ -336,20 +336,33 @@ int xbee_send_tx_request(XBeeContext_t* ctx,
                          const uint8_t* rf_data,
                          uint16_t rf_data_len,
                          uint8_t frame_id) {
+    uint32_t frame_length;
+
+    if (ctx == NULL || ctx->uart == NULL) {
+        return -1;
+    }
+    if (rf_data_len > 0u && rf_data == NULL) {
+        return -1;
+    }
+
+    frame_length = 14u + (uint32_t)rf_data_len;
+    if (frame_length > XBEE_MAX_FRAME_LEN) {
+        return -1;
+    }
+
     UART_Context* uart = ctx->uart;
     
     /* Frame structure:
      * [FrameType: 1] [FrameID: 1] [Dest64: 8] [Dest16: 2] [BroadcastRadius: 1] [Options: 1] [RF Data: N]
      * Total length = 14 + rf_data_len
      */
-    uint16_t frame_length = 14 + rf_data_len;
     uint8_t checksum = 0;
     
     /* Send start delimiter (not escaped) */
     if (UART_SendByte(uart, XBEE_START_DELIMITER) != 0) return -1;
     
     /* Send length (escaped) */
-    if (send_length_escaped(uart, frame_length) != 0) return -1;
+    if (send_length_escaped(uart, (uint16_t)frame_length) != 0) return -1;
     
     /* Frame type */
     if (send_byte_escaped(uart, XBEE_FRAME_TX_REQUEST, &checksum) != 0) return -1;
@@ -398,20 +411,36 @@ int xbee_send_at_command(XBeeContext_t* ctx,
                          const uint8_t* parameter,
                          uint16_t param_len,
                          uint8_t frame_id) {
+    uint32_t frame_length;
+
+    if (ctx == NULL || ctx->uart == NULL) {
+        return -1;
+    }
+    if (command == NULL || command[0] == '\0' || command[1] == '\0') {
+        return -1;
+    }
+    if (param_len > 0u && parameter == NULL) {
+        return -1;
+    }
+
+    frame_length = 4u + (uint32_t)param_len;
+    if (frame_length > XBEE_MAX_FRAME_LEN) {
+        return -1;
+    }
+
     UART_Context* uart = ctx->uart;
     
     /* Frame structure:
      * [FrameType: 1] [FrameID: 1] [Command: 2] [Parameter: N]
      * Total length = 4 + param_len
      */
-    uint16_t frame_length = 4 + param_len;
     uint8_t checksum = 0;
     
     /* Send start delimiter */
     if (UART_SendByte(uart, XBEE_START_DELIMITER) != 0) return -1;
     
     /* Send length */
-    if (send_length_escaped(uart, frame_length) != 0) return -1;
+    if (send_length_escaped(uart, (uint16_t)frame_length) != 0) return -1;
     
     /* Frame type */
     if (send_byte_escaped(uart, XBEE_FRAME_AT_COMMAND, &checksum) != 0) return -1;

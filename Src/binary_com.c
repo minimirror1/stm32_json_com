@@ -123,6 +123,54 @@ static void SendErrorResponse(BinaryContext *ctx,
                               BinErrorCode code,
                               const char *msg);
 static uint8_t *WritePingStatusPayload(uint8_t *p, const AppPingStatus *status);
+static void RecordTxBusyDrop(BinaryContext *ctx);
+static bool BoundedCStrLen(const char *s, size_t max_scan, uint16_t *out_len);
+static uint8_t BoundedLen255(const char *s);
+
+static void RecordTxBusyDrop(BinaryContext *ctx)
+{
+    ctx->tx_busy_drop_count++;
+
+    if (ctx->frag_tx.on_log != NULL) {
+        ctx->frag_tx.on_log("binary_com: TX busy, response dropped",
+                            ctx->frag_tx.callback_user_data);
+    }
+}
+
+static bool BoundedCStrLen(const char *s, size_t max_scan, uint16_t *out_len)
+{
+    size_t len = 0u;
+
+    if (s == NULL || out_len == NULL) {
+        return false;
+    }
+
+    while (len < max_scan && s[len] != '\0') {
+        len++;
+    }
+
+    if (len == max_scan) {
+        return false;
+    }
+
+    *out_len = (uint16_t)len;
+    return true;
+}
+
+static uint8_t BoundedLen255(const char *s)
+{
+    size_t len = 0u;
+
+    if (s == NULL) {
+        return 0u;
+    }
+
+    while (len < 255u && s[len] != '\0') {
+        len++;
+    }
+
+    return (uint8_t)len;
+}
 
 /* ============================================================================
  * Response Sending Helpers
@@ -155,6 +203,7 @@ static BinarySendStatus SendBinaryResponse(BinaryContext *ctx,
 
     /* Avoid overwriting tx_buffer while a previous async TX session is active. */
     if (frag_tx_is_busy(&ctx->frag_tx)) {
+        RecordTxBusyDrop(ctx);
         return BIN_SEND_TX_BUSY;
     }
 
@@ -175,6 +224,7 @@ static BinarySendStatus SendBinaryResponse(BinaryContext *ctx,
     ctx->tx_buffer_len = total;
     if (frag_tx_send(&ctx->frag_tx, ctx->tx_buffer, total,
                      ctx->current_source_addr) == 0u) {
+        RecordTxBusyDrop(ctx);
         return BIN_SEND_TX_BUSY;
     }
 
@@ -189,6 +239,7 @@ static BinarySendStatus FinalizeBufferedResponse(BinaryContext *ctx,
 {
     /* Avoid overwriting tx_buffer while a previous async TX session is active. */
     if (frag_tx_is_busy(&ctx->frag_tx)) {
+        RecordTxBusyDrop(ctx);
         return BIN_SEND_TX_BUSY;
     }
 
@@ -202,6 +253,7 @@ static BinarySendStatus FinalizeBufferedResponse(BinaryContext *ctx,
     ctx->tx_buffer_len = (uint32_t)BIN_RESP_HEADER_SIZE + (uint32_t)payload_len;
     if (frag_tx_send(&ctx->frag_tx, ctx->tx_buffer, ctx->tx_buffer_len,
                      ctx->current_source_addr) == 0u) {
+        RecordTxBusyDrop(ctx);
         return BIN_SEND_TX_BUSY;
     }
 
@@ -252,8 +304,7 @@ static void SendErrorResponse(BinaryContext *ctx,
     uint8_t *p = err_payload;
 
     if (msg != NULL) {
-        size_t raw = strlen(msg);
-        msg_len = (raw > 255u) ? 255u : (uint8_t)raw;
+        msg_len = BoundedLen255(msg);
     }
 
     p = write_u8(p, (uint8_t)code);
@@ -393,6 +444,11 @@ static void HandleGetMotors(BinaryContext *ctx, uint8_t src_id)
         SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_MOTORS, ERR_UNKNOWN, NULL);
         return;
     }
+    if (count > APP_MAX_MOTORS) {
+        SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_MOTORS,
+                          ERR_INVALID_PARAM, "Invalid motor count");
+        return;
+    }
 
     /*
      * Payload: motor_count(1) + motors[] each 17 bytes
@@ -441,6 +497,11 @@ static void HandleGetMotorState(BinaryContext *ctx, uint8_t src_id)
         SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_MOTOR_STATE, ERR_UNKNOWN, NULL);
         return;
     }
+    if (count > APP_MAX_MOTORS) {
+        SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_MOTOR_STATE,
+                          ERR_INVALID_PARAM, "Invalid motor count");
+        return;
+    }
 
     /*
      * Payload: motor_count(1) + states[] each 6 bytes
@@ -479,6 +540,11 @@ static void HandleGetFiles(BinaryContext *ctx, uint8_t src_id)
         SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_FILES, ERR_UNKNOWN, NULL);
         return;
     }
+    if (count > APP_MAX_FILES) {
+        SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_FILES,
+                          ERR_INVALID_PARAM, "Invalid file count");
+        return;
+    }
 
     /*
      * Payload:
@@ -494,9 +560,19 @@ static void HandleGetFiles(BinaryContext *ctx, uint8_t src_id)
     p = write_u16le(p, (uint16_t)count);
 
     for (int i = 0; i < count; i++) {
+        uint16_t name_len_u16 = 0u;
+        uint16_t path_len_u16 = 0u;
+
+        if (!BoundedCStrLen(files[i].name, APP_NAME_MAX_LEN, &name_len_u16) ||
+            !BoundedCStrLen(files[i].path, APP_PATH_MAX_LEN, &path_len_u16)) {
+            SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_FILES,
+                              ERR_INVALID_PARAM, "Invalid file entry");
+            return;
+        }
+
         uint8_t flags    = files[i].is_directory ? 0x01u : 0x00u;
-        uint8_t name_len = (uint8_t)strlen(files[i].name);
-        uint16_t path_len = (uint16_t)strlen(files[i].path);
+        uint8_t name_len = (uint8_t)name_len_u16;
+        uint16_t path_len = path_len_u16;
 
         ptrdiff_t used = p - ctx->tx_buffer;
         uint32_t needed = (uint32_t)used + 1u + 2u + 4u + 1u + name_len + 2u + path_len;
@@ -554,7 +630,12 @@ static void HandleGetFile(BinaryContext *ctx, uint8_t src_id,
         return;
     }
 
-    uint16_t content_len = (uint16_t)strlen(content_buf);
+    uint16_t content_len = 0u;
+    if (!BoundedCStrLen(content_buf, APP_CONTENT_MAX_LEN, &content_len)) {
+        SendErrorResponse(ctx, src_id, (uint8_t)CMD_GET_FILE,
+                          ERR_INVALID_PARAM, "Invalid file content");
+        return;
+    }
 
     /*
      * Response payload:

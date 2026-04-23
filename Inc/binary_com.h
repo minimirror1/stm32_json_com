@@ -151,6 +151,9 @@ typedef struct {
     /* TX buffer for building responses */
     uint8_t  tx_buffer[BIN_TX_BUFFER_SIZE];
     uint32_t tx_buffer_len;
+
+    /* Number of responses dropped because TX was busy */
+    uint32_t tx_busy_drop_count;
 } BinaryContext;
 
 /* ============================================================================

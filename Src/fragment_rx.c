@@ -39,10 +39,21 @@ static RxSession_t* find_session(FragRxContext_t* ctx, uint16_t msg_id, uint64_t
  */
 static RxSession_t* get_or_create_session(FragRxContext_t* ctx, uint16_t msg_id, 
                                            uint32_t total_len, uint16_t frag_cnt,
-                                           uint64_t source_addr) {
+                                           uint64_t source_addr,
+                                           bool* metadata_mismatch) {
+    if (metadata_mismatch != NULL) {
+        *metadata_mismatch = false;
+    }
+
     /* First, try to find existing session */
     RxSession_t* session = find_session(ctx, msg_id, source_addr);
     if (session) {
+        if (session->total_len != total_len || session->frag_cnt != frag_cnt) {
+            if (metadata_mismatch != NULL) {
+                *metadata_mismatch = true;
+            }
+            return NULL;
+        }
         return session;
     }
     
@@ -257,12 +268,17 @@ static void process_data_fragment(FragRxContext_t* ctx, const uint8_t* data,
     }
 
     /* Get or create session after validating fragment boundaries */
-    RxSession_t* session = get_or_create_session(ctx, header.msg_id, 
+    bool metadata_mismatch = false;
+    RxSession_t* session = get_or_create_session(ctx, header.msg_id,
                                                   header.total_len, header.frag_cnt,
-                                                  source_addr);
+                                                  source_addr, &metadata_mismatch);
     if (!session) {
         if (ctx->on_log) {
-            ctx->on_log("No free RX session slots", ctx->callback_user_data);
+            if (metadata_mismatch) {
+                ctx->on_log("Session metadata mismatch", ctx->callback_user_data);
+            } else {
+                ctx->on_log("No free RX session slots", ctx->callback_user_data);
+            }
         }
         return;
     }
