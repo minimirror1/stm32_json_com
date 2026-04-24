@@ -142,6 +142,26 @@ typedef struct {
     uint32_t total_ms;                    /* Total motion time in milliseconds */
 } AppPingStatus;
 
+/**
+ * @brief Host local date/time delivered in CMD_PING payload format 1
+ *
+ * Payload layout:
+ *   time_fmt(1) | country_code[2] | year(2 LE) | month(1) | day(1) |
+ *   hour(1) | minute(1) | second(1) | utc_offset_min(2 LE)
+ *
+ * The app layer receives only the decoded values below.
+ */
+typedef struct {
+    char country_code[3];                 /* 2-char ISO-like code, null-terminated */
+    uint16_t year;                        /* Local year */
+    uint8_t month;                        /* 1..12 */
+    uint8_t day;                          /* 1..31 */
+    uint8_t hour;                         /* 0..23 */
+    uint8_t minute;                       /* 0..59 */
+    uint8_t second;                       /* 0..59 */
+    int16_t utc_offset_min;               /* Local offset from UTC in minutes */
+} AppHostDateTime;
+
 /*******************************************************************************
  * Application Function Declarations (__weak stubs)
  *
@@ -160,6 +180,19 @@ typedef struct {
  *   }
  */
 bool App_Ping(void);
+
+/**
+ * @brief Apply host local date/time received via CMD_PING payload
+ * @param host_time Decoded local date/time snapshot from the PC
+ * @return true on success, false on validation/apply failure
+ *
+ * @example
+ *   bool App_SetHostDateTime(const AppHostDateTime *host_time) {
+ *       RTC_SetLocalDateTime(host_time);
+ *       return true;
+ *   }
+ */
+bool App_SetHostDateTime(const AppHostDateTime *host_time);
 
 /**
  * @brief Get current status snapshot for CMD_PONG payload

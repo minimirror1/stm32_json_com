@@ -254,13 +254,13 @@ tr.summary-break td{padding-top:.85rem;background-image:linear-gradient(to right
 <!-- 명령어 일람 -->
 <div class="panel" id="panel-commands">
   <div class="section-note">
-    <strong>Code-truth snapshot (from current source)</strong><br>
-    Request cmds: <span class="mono">CMD_PING(0x01), CMD_MOVE(0x03), CMD_MOTION_CTRL(0x04), CMD_GET_MOTORS(0x10), CMD_GET_MOTOR_STATE(0x11), CMD_GET_FILES(0x20), CMD_GET_FILE(0x21), CMD_SAVE_FILE(0x22), CMD_VERIFY_FILE(0x23)</span><br>
-    Response cmds: <span class="mono">CMD_PONG(0x02), CMD_ERROR(0xFF)</span><br>
-    TX busy behavior: one pending response slot is queued and flushed later in <span class="mono">BIN_COM_Process/Tick</span>.
-    If that slot is already occupied, additional responses are dropped and
-    <span class="mono">tx_busy_drop_count</span> increments.<br>
-    This snapshot is the authoritative source when it differs from older sections below.
+    <strong>현재 소스 기준 스냅샷</strong><br>
+    요청 cmd: <span class="mono">CMD_PING(0x01), CMD_MOVE(0x03), CMD_MOTION_CTRL(0x04), CMD_GET_MOTORS(0x10), CMD_GET_MOTOR_STATE(0x11), CMD_GET_FILES(0x20), CMD_GET_FILE(0x21), CMD_SAVE_FILE(0x22), CMD_VERIFY_FILE(0x23)</span><br>
+    응답 cmd: <span class="mono">CMD_PONG(0x02), CMD_ERROR(0xFF)</span><br>
+    TX busy 시에는 응답 1개를 <span class="mono">BIN_COM_Process/Tick</span> 에서 나중에 송신하도록 보류합니다.
+    이미 그 보류 슬롯이 차 있으면 추가 응답은 drop 되고
+    <span class="mono">tx_busy_drop_count</span> 가 증가합니다.<br>
+    아래 오래된 설명과 다를 경우 이 스냅샷을 현재 코드 기준으로 봅니다.
   </div>
   <div class="section-note">
     이 탭은 실제 wire command를 빠르게 훑어보는 명령 목록과 선택된 명령 상세를 함께 보여줍니다.<br>
@@ -342,6 +342,16 @@ tr.summary-break td{padding-top:.85rem;background-image:linear-gradient(to right
       </div>
 
       <div class="function-grid">
+        <div class="function-block function-block-wide">
+          <h4>현재 코드 기준 action 구조</h4>
+          <ul>
+            <li>payload 첫 바이트의 action 값이 실제 동작을 구분합니다.</li>
+            <li>즉 PLAY / STOP / PAUSE / SEEK 는 서로 다른 cmd가 아니라 같은 <span class="mono">CMD_MOTION_CTRL</span> 안에서 action 으로 나뉩니다.</li>
+            <li>SEEK 는 추가로 little-endian <span class="mono">time_ms</span> 4 byte 를 뒤에 붙입니다.</li>
+            <li>예: <span class="mono">00</span> = PLAY, <span class="mono">01</span> = STOP, <span class="mono">02</span> = PAUSE, <span class="mono">03 + time_ms(4 LE)</span> = SEEK</li>
+            <li>통신 레이어가 action 과 payload 길이를 먼저 검증한 뒤 대응되는 <span class="mono">App_Motion*</span> 함수로 분기합니다.</li>
+          </ul>
+        </div>
         <div class="function-block">
           <h4>명령 개요</h4>
           <ul>
@@ -434,6 +444,16 @@ tr.summary-break td{padding-top:.85rem;background-image:linear-gradient(to right
       </div>
 
       <div class="function-grid">
+        <div class="function-block function-block-wide">
+          <h4>현재 코드 기준 ping 확장 payload</h4>
+          <ul>
+            <li>기존 ping 도 계속 허용하므로 <span class="mono">payload_len = 0</span> 은 여전히 정상 입력입니다.</li>
+            <li>현재 코드는 payload 형식 1 도 함께 허용하며 길이는 <span class="mono">payload_len = 12</span> 입니다.</li>
+            <li>구조는 <span class="mono">time_fmt(1)=0x01 | country_code[2] | year(2 LE) | month(1) | day(1) | hour(1) | minute(1) | second(1) | utc_offset_min(2 LE)</span> 입니다.</li>
+            <li>예: <span class="mono">01 4B 52 EA 07 04 18 0F 1E 2D 1C 02</span> = KR / 2026-04-24 15:30:45 / UTC+09:00</li>
+            <li>통신 레이어가 payload 를 먼저 검증하고 <span class="mono">App_SetHostDateTime(...)</span> 에 전달한 뒤, 기존과 동일하게 <span class="mono">App_Ping()</span> 이후 <span class="mono">CMD_PONG</span> 응답으로 이어집니다.</li>
+          </ul>
+        </div>
         <div class="function-block">
           <h4>명령 개요</h4>
           <ul>
@@ -1403,9 +1423,9 @@ bool App_VerifyFile(const char *path, const char *content, bool *out_match)
 <!-- 전체 요약 -->
 <div class="panel" id="panel-summary">
   <div class="section-note">
-    This summary table includes domain examples.
-    For exact wire behavior, use the <strong>Code-truth snapshot</strong> in the Commands tab
-    (authoritative with current <span class="mono">binary_com.h/.c</span> implementation).
+    이 요약 표에는 도메인 예시가 함께 들어 있습니다.
+    정확한 wire 동작은 Commands 탭의 <strong>현재 소스 기준 스냅샷</strong>을 우선으로 봅니다
+    (<span class="mono">binary_com.h/.c</span> 현재 구현 기준).
   </div>
   <table>
     <tr><th>분류</th><th>명령어 항목</th><th>함수 항목</th><th>패킷명</th><th>방향</th><th>연관 SD 파일</th></tr>

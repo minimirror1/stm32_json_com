@@ -34,7 +34,8 @@
 static void HandleBinaryPacket(BinaryContext *ctx, const uint8_t *data, uint32_t len);
 
 /* Command handlers */
-static void HandlePing(BinaryContext *ctx, uint8_t src_id);
+static void HandlePing(BinaryContext *ctx, uint8_t src_id,
+                       const uint8_t *payload, uint16_t payload_len);
 static void HandleMove(BinaryContext *ctx, uint8_t src_id,
                        const uint8_t *payload, uint16_t payload_len);
 static void HandleMotionCtrl(BinaryContext *ctx, uint8_t src_id,
@@ -74,7 +75,9 @@ typedef enum {
     BIN_SEND_TX_BUSY
 } BinarySendStatus;
 
-#define BIN_PONG_PAYLOAD_SIZE  10u
+#define BIN_PONG_PAYLOAD_SIZE              10u
+#define BIN_PING_TIME_FMT_LOCAL_TIME_V1   0x01u
+#define BIN_PING_TIME_PAYLOAD_SIZE        12u
 
 /* ============================================================================
  * Little-Endian Helpers
@@ -130,6 +133,8 @@ static void SendErrorResponse(BinaryContext *ctx,
                               BinErrorCode code,
                               const char *msg);
 static uint8_t *WritePingStatusPayload(uint8_t *p, const AppPingStatus *status);
+static bool ParsePingHostDateTime(const uint8_t *payload, uint16_t payload_len,
+                                  AppHostDateTime *out_host_time);
 static void RecordTxBusyDrop(BinaryContext *ctx);
 static BinarySendStatus QueueResponseFrame(BinaryContext *ctx,
                                            uint8_t tar_id,
@@ -415,12 +420,90 @@ static uint8_t *WritePingStatusPayload(uint8_t *p, const AppPingStatus *status)
     return p;
 }
 
+static bool NormalizeCountryCodeByte(uint8_t c, char *out)
+{
+    if (out == NULL) {
+        return false;
+    }
+    if (c >= (uint8_t)'A' && c <= (uint8_t)'Z') {
+        *out = (char)c;
+        return true;
+    }
+    if (c >= (uint8_t)'a' && c <= (uint8_t)'z') {
+        *out = (char)(c - ((uint8_t)'a' - (uint8_t)'A'));
+        return true;
+    }
+    return false;
+}
+
+static bool ParsePingHostDateTime(const uint8_t *payload, uint16_t payload_len,
+                                  AppHostDateTime *out_host_time)
+{
+    char country0;
+    char country1;
+    int16_t utc_offset_min;
+
+    if (out_host_time == NULL) {
+        return false;
+    }
+    if (payload == NULL || payload_len != BIN_PING_TIME_PAYLOAD_SIZE) {
+        return false;
+    }
+    if (payload[0] != BIN_PING_TIME_FMT_LOCAL_TIME_V1) {
+        return false;
+    }
+    if (!NormalizeCountryCodeByte(payload[1], &country0) ||
+        !NormalizeCountryCodeByte(payload[2], &country1)) {
+        return false;
+    }
+
+    out_host_time->country_code[0] = country0;
+    out_host_time->country_code[1] = country1;
+    out_host_time->country_code[2] = '\0';
+    out_host_time->year = read_u16le(payload + 3u);
+    out_host_time->month = payload[5];
+    out_host_time->day = payload[6];
+    out_host_time->hour = payload[7];
+    out_host_time->minute = payload[8];
+    out_host_time->second = payload[9];
+    utc_offset_min = (int16_t)read_u16le(payload + 10u);
+    out_host_time->utc_offset_min = utc_offset_min;
+
+    if (out_host_time->year == 0u ||
+        out_host_time->month < 1u || out_host_time->month > 12u ||
+        out_host_time->day < 1u || out_host_time->day > 31u ||
+        out_host_time->hour > 23u ||
+        out_host_time->minute > 59u ||
+        out_host_time->second > 59u) {
+        return false;
+    }
+    if (utc_offset_min < -720 || utc_offset_min > 840) {
+        return false;
+    }
+
+    return true;
+}
+
 /* ============================================================================
  * Command Handlers
  * ============================================================================ */
 
-static void HandlePing(BinaryContext *ctx, uint8_t src_id)
+static void HandlePing(BinaryContext *ctx, uint8_t src_id,
+                       const uint8_t *payload, uint16_t payload_len)
 {
+    if (payload_len != 0u) {
+        AppHostDateTime host_time;
+
+        if (!ParsePingHostDateTime(payload, payload_len, &host_time)) {
+            SendErrorResponse(ctx, src_id, (uint8_t)CMD_PONG, ERR_INVALID_INPUT, NULL);
+            return;
+        }
+        if (!App_SetHostDateTime(&host_time)) {
+            SendErrorResponse(ctx, src_id, (uint8_t)CMD_PONG, ERR_INVALID_PARAM, NULL);
+            return;
+        }
+    }
+
     bool ok = App_Ping();
     if (ok) {
         AppPingStatus ping_status;
@@ -925,7 +1008,7 @@ static void HandleBinaryPacket(BinaryContext *ctx, const uint8_t *data, uint32_t
 
     switch ((BinCmd)hdr.cmd) {
         case CMD_PING:
-            HandlePing(ctx, hdr.src_id);
+            HandlePing(ctx, hdr.src_id, payload, hdr.payload_len);
             break;
 
         case CMD_MOVE:
