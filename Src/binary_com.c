@@ -280,7 +280,7 @@ static bool ValidateResponsePayloadLen(uint32_t payload_len_u32,
  * @param ctx         BinaryContext
  * @param tar_id      Target (requester) device ID
  * @param cmd         Command being responded to
- * @param status      STATUS_OK or STATUS_ERROR
+ * @param status      BIN_STATUS_OK or BIN_STATUS_ERROR
  * @param payload     Pointer to payload bytes (may be NULL if payload_len==0)
  * @param payload_len Number of payload bytes
  */
@@ -408,7 +408,7 @@ static void SendErrorResponse(BinaryContext *ctx,
 
     uint16_t err_payload_len = (uint16_t)(2u + msg_len);
     (void)SendBinaryResponse(ctx, tar_id, (uint8_t)CMD_ERROR,
-                             STATUS_ERROR, err_payload, err_payload_len);
+                             BIN_STATUS_ERROR, err_payload, err_payload_len);
 }
 
 static uint8_t *WritePingStatusPayload(uint8_t *p, const AppPingStatus *status)
@@ -516,7 +516,7 @@ static void HandlePing(BinaryContext *ctx, uint8_t src_id,
 
         (void)WritePingStatusPayload(payload, &ping_status);
         BinarySendStatus send_status =
-            SendBinaryResponse(ctx, src_id, (uint8_t)CMD_PONG, STATUS_OK,
+            SendBinaryResponse(ctx, src_id, (uint8_t)CMD_PONG, BIN_STATUS_OK,
                                payload, BIN_PONG_PAYLOAD_SIZE);
         SendErrorForStatus(ctx, src_id, (uint8_t)CMD_PONG, send_status);
     } else {
@@ -543,7 +543,7 @@ static void HandleMove(BinaryContext *ctx, uint8_t src_id,
         p = write_u8(p, ctx->my_id);
         (void)write_u8(p, motor_id);
         BinarySendStatus send_status =
-            SendBinaryResponse(ctx, src_id, (uint8_t)CMD_MOVE, STATUS_OK, resp, 2u);
+            SendBinaryResponse(ctx, src_id, (uint8_t)CMD_MOVE, BIN_STATUS_OK, resp, 2u);
         SendErrorForStatus(ctx, src_id, (uint8_t)CMD_MOVE, send_status);
     } else {
         SendErrorResponse(ctx, src_id, (uint8_t)CMD_MOVE, ERR_MOTOR_NOT_FOUND, NULL);
@@ -598,7 +598,7 @@ static void HandleMotionCtrl(BinaryContext *ctx, uint8_t src_id,
         p = write_u8(p, (uint8_t)action);
         (void)write_u8(p, ctx->my_id);
         BinarySendStatus send_status =
-            SendBinaryResponse(ctx, src_id, (uint8_t)CMD_MOTION_CTRL, STATUS_OK, resp, 2u);
+            SendBinaryResponse(ctx, src_id, (uint8_t)CMD_MOTION_CTRL, BIN_STATUS_OK, resp, 2u);
         SendErrorForStatus(ctx, src_id, (uint8_t)CMD_MOTION_CTRL, send_status);
     } else {
         SendErrorResponse(ctx, src_id, (uint8_t)CMD_MOTION_CTRL, ERR_UNKNOWN, NULL);
@@ -657,7 +657,7 @@ static void HandleGetMotors(BinaryContext *ctx, uint8_t src_id)
     SendErrorForStatus(ctx, src_id, (uint8_t)CMD_GET_MOTORS,
                        FinalizeBufferedResponse(ctx, src_id,
                                                 (uint8_t)CMD_GET_MOTORS,
-                                                STATUS_OK, payload_len));
+                                                BIN_STATUS_OK, payload_len));
 }
 
 static void HandleGetMotorState(BinaryContext *ctx, uint8_t src_id)
@@ -701,7 +701,7 @@ static void HandleGetMotorState(BinaryContext *ctx, uint8_t src_id)
     SendErrorForStatus(ctx, src_id, (uint8_t)CMD_GET_MOTOR_STATE,
                        FinalizeBufferedResponse(ctx, src_id,
                                                 (uint8_t)CMD_GET_MOTOR_STATE,
-                                                STATUS_OK, payload_len));
+                                                BIN_STATUS_OK, payload_len));
 }
 
 static void HandleGetFiles(BinaryContext *ctx, uint8_t src_id)
@@ -777,7 +777,7 @@ static void HandleGetFiles(BinaryContext *ctx, uint8_t src_id)
     SendErrorForStatus(ctx, src_id, (uint8_t)CMD_GET_FILES,
                        FinalizeBufferedResponse(ctx, src_id,
                                                 (uint8_t)CMD_GET_FILES,
-                                                STATUS_OK, payload_len));
+                                                BIN_STATUS_OK, payload_len));
 }
 
 static void HandleGetFile(BinaryContext *ctx, uint8_t src_id,
@@ -838,7 +838,7 @@ static void HandleGetFile(BinaryContext *ctx, uint8_t src_id,
     SendErrorForStatus(ctx, src_id, (uint8_t)CMD_GET_FILE,
                        FinalizeBufferedResponse(ctx, src_id,
                                                 (uint8_t)CMD_GET_FILE,
-                                                STATUS_OK, resp_payload_len));
+                                                BIN_STATUS_OK, resp_payload_len));
 }
 
 static void HandleSaveFile(BinaryContext *ctx, uint8_t src_id,
@@ -901,7 +901,7 @@ static void HandleSaveFile(BinaryContext *ctx, uint8_t src_id,
     SendErrorForStatus(ctx, src_id, (uint8_t)CMD_SAVE_FILE,
                        FinalizeBufferedResponse(ctx, src_id,
                                                 (uint8_t)CMD_SAVE_FILE,
-                                                STATUS_OK, resp_payload_len));
+                                                BIN_STATUS_OK, resp_payload_len));
 }
 
 static void HandleVerifyFile(BinaryContext *ctx, uint8_t src_id,
@@ -967,7 +967,7 @@ static void HandleVerifyFile(BinaryContext *ctx, uint8_t src_id,
     SendErrorForStatus(ctx, src_id, (uint8_t)CMD_VERIFY_FILE,
                        FinalizeBufferedResponse(ctx, src_id,
                                                 (uint8_t)CMD_VERIFY_FILE,
-                                                STATUS_OK, resp_payload_len));
+                                                BIN_STATUS_OK, resp_payload_len));
 }
 
 /* ============================================================================
