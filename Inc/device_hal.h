@@ -40,9 +40,13 @@
 
 /** @brief Motor type enum (wire value: uint8) */
 typedef enum {
-    APP_MOTOR_TYPE_SERVO   = 0x00,
-    APP_MOTOR_TYPE_DC      = 0x01,
-    APP_MOTOR_TYPE_STEPPER = 0x02
+    APP_MOTOR_TYPE_NULL = 0x00,
+    APP_MOTOR_TYPE_RC   = 0x01,
+    APP_MOTOR_TYPE_AC   = 0x02,
+    APP_MOTOR_TYPE_BL   = 0x03,
+    APP_MOTOR_TYPE_ZER  = 0x04,
+    APP_MOTOR_TYPE_DXL  = 0x05,
+    APP_MOTOR_TYPE_AC2  = 0x06
 } AppMotorType;
 
 /** @brief Motor status enum (wire value: uint8) */
@@ -106,7 +110,7 @@ typedef struct {
     uint8_t id;                           /* Motor unique ID */
     uint8_t group_id;                     /* Group ID (for DisplayId = GroupId-SubId) */
     uint8_t sub_id;                       /* Sub ID within group */
-    AppMotorType   type;                  /* Motor type (Servo/DC/Stepper) */
+    AppMotorType   type;                  /* Motor type (NULL/RC/AC/BL/ZER/DXL/AC2) */
     AppMotorStatus status;                /* Motor status (Normal/Error/Overload/Disconnected) */
     int32_t position;                     /* Current raw position value */
     float velocity;                       /* Current velocity */
@@ -338,7 +342,7 @@ bool App_VerifyFile(const char *path, const char *content, bool *out_match);
  *           out_motors[idx].id = 1;
  *           out_motors[idx].group_id = 1;
  *           out_motors[idx].sub_id = 1;
- *           out_motors[idx].type = APP_MOTOR_TYPE_SERVO;
+ *           out_motors[idx].type = APP_MOTOR_TYPE_RC;
  *           out_motors[idx].status = APP_MOTOR_STATUS_NORMAL;
  *           out_motors[idx].position = 2048;
  *           out_motors[idx].velocity = 0.5f;
