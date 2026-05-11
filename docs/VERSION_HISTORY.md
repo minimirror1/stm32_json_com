@@ -1,6 +1,6 @@
 # STM32 Binary Communication Library 버전 이력
 
-이 문서는 `stm32_json_com` 라이브러리의 버전별 변경 사항, 프로토콜 변경,
+이 문서는 `stm32_xbee_com` 라이브러리의 버전별 변경 사항, 프로토콜 변경,
 App 레이어 계약, 구현 위치, 검증 방법을 누적 기록합니다.
 
 작성 원칙:
