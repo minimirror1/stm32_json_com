@@ -137,13 +137,14 @@ typedef struct {
  * @brief Status snapshot for CMD_PONG payload
  *
  * Wire format:
- *   state(1) | init_state(1) | current_ms(4 LE) | total_ms(4 LE)
+ *   state(1) | init_state(1) | current_ms(4 LE) | total_ms(4 LE) | power_status(1)
  */
 typedef struct {
     AppPingState state;                   /* Device state for PONG payload */
     uint8_t init_state;                   /* Initialization stage code */
     uint32_t current_ms;                  /* Current motion time in milliseconds */
     uint32_t total_ms;                    /* Total motion time in milliseconds */
+    uint8_t power_status;                 /* 0x01 = ON, 0x00 = OFF */
 } AppPingStatus;
 
 /**
@@ -209,6 +210,7 @@ bool App_SetHostDateTime(const AppHostDateTime *host_time);
  *       out_status->init_state = 0;
  *       out_status->current_ms = 0;
  *       out_status->total_ms = 0;
+ *       out_status->power_status = 0;
  *       return true;
  *   }
  */
