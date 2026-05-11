@@ -75,7 +75,7 @@ typedef enum {
     BIN_SEND_TX_BUSY
 } BinarySendStatus;
 
-#define BIN_PONG_PAYLOAD_SIZE              10u
+#define BIN_PONG_PAYLOAD_SIZE              11u
 #define BIN_PING_TIME_FMT_LOCAL_TIME_V1   0x01u
 #define BIN_PING_TIME_PAYLOAD_SIZE        12u
 
@@ -417,6 +417,7 @@ static uint8_t *WritePingStatusPayload(uint8_t *p, const AppPingStatus *status)
     p = write_u8(p, status->init_state);
     p = write_u32le(p, status->current_ms);
     p = write_u32le(p, status->total_ms);
+    p = write_u8(p, status->power_status);
     return p;
 }
 
@@ -1192,5 +1193,4 @@ bool BIN_COM_IsTxBusy(BinaryContext *ctx)
 {
     return frag_tx_is_busy(&ctx->frag_tx);
 }
-
 

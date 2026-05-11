@@ -440,7 +440,7 @@ tr.summary-break td{padding-top:.85rem;background-image:linear-gradient(to right
       <div class="function-sub">
         <span class="mono">CMD_PING</span>은 장치가 살아 있고 통신 가능 상태인지 확인하는 기본 명령입니다.
         현재 구현 기준으로 성공 시 <span class="mono">CMD_PONG</span> payload 안에 현재 상태, 초기화 상태, 모션 시간을 함께 담아 응답합니다.
-        즉, PONG 응답은 <span class="mono">payload_len = 10</span> 형태로 동작합니다.
+        즉, PONG 응답은 <span class="mono">payload_len = 11</span> 형태로 동작합니다.
       </div>
 
       <div class="function-grid">
@@ -468,8 +468,8 @@ tr.summary-break td{padding-top:.85rem;background-image:linear-gradient(to right
           <h4>PONG payload 형식</h4>
           <ul>
             <li>성공 시 응답 cmd는 <span class="mono">CMD_PONG(0x02)</span> 입니다.</li>
-            <li>현재 구현의 성공 응답은 <span class="mono">STATUS_OK</span>, <span class="mono">payload_len = 10</span> 입니다.</li>
-            <li>payload 순서는 <span class="mono">state(1) | init_state(1) | current_ms(4 LE) | total_ms(4 LE)</span> 입니다.</li>
+            <li>현재 구현의 성공 응답은 <span class="mono">STATUS_OK</span>, <span class="mono">payload_len = 11</span> 입니다.</li>
+            <li>payload 순서는 <span class="mono">state(1) | init_state(1) | current_ms(4 LE) | total_ms(4 LE) | power_status(1)</span> 입니다.</li>
             <li>실패 시에는 에러 응답으로 처리됩니다.</li>
           </ul>
         </div>
@@ -511,7 +511,7 @@ FF = tar_id (broadcast)
 00 = tar_id (PC)
 02 = CMD_PONG
 00 = STATUS_OK
-0A 00 = payload_len = 10 (LE)
+0B 00 = payload_len = 11 (LE)
 01 = state = 재생중
 00 = init_state = reserved
 20 03 00 00 = current_ms = 800 (LE)
@@ -1166,14 +1166,15 @@ if (ok) {
 
     if (App_GetPingStatus(&ping_status)) {
         WritePingStatusPayload(payload, &ping_status);
-        SendBinaryResponse(ctx, src_id, (uint8_t)CMD_PONG, STATUS_OK, payload, 10u);
+        SendBinaryResponse(ctx, src_id, (uint8_t)CMD_PONG, STATUS_OK, payload, 11u);
     }
 }</code></pre>
           <pre><code>/* 현재 구현의 PONG payload 예시 */
 payload[0] = 0x01;        /* state = 재생중 */
 payload[1] = 0x00;        /* init_state = reserved */
 payload[2..5] = 800 ms;   /* current_ms, uint32 LE */
-payload[6..9] = 5000 ms;  /* total_ms, uint32 LE */</code></pre>
+payload[6..9] = 5000 ms;  /* total_ms, uint32 LE */
+payload[10] = 0x01;       /* power_status = ON */</code></pre>
           <pre><code>/* app 레이어 최대 구현 예시 */
 bool App_Ping(void)
 {
@@ -1432,7 +1433,7 @@ bool App_VerifyFile(const char *path, const char *content, bool *out_match)
     <tr><td rowspan="3" style="color:var(--doc-text-info);font-weight:500">모션 제어</td><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-motion-ctrl-detail')">CMD_MOTION_CTRL</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-motion-play')">App_MotionPlay</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-motion-play')">모션 재생 (PLAY)</button></td><td><span class="badge b-cmd">PC→MCU</span></td><td><span class="mono">MT_RP, MT_CT</span></td></tr>
     <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-motion-ctrl-detail')">CMD_MOTION_CTRL</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-motion-stop')">App_MotionStop</button></td><td>모션 정지 (STOP)</td><td><span class="badge b-cmd">PC→MCU</span></td><td>—</td></tr>
     <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-motion-ctrl-detail')">CMD_MOTION_CTRL</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-motion-pause')">App_MotionPause</button></td><td>일시정지/재개 (PAUSE)</td><td><span class="badge b-cmd">PC→MCU</span></td><td>—</td></tr>
-    <tr class="summary-break"><td rowspan="1" style="color:var(--doc-text-warning);font-weight:500">상태 조회</td><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-ping-detail')">CMD_PING / CMD_PONG</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-ping')">App_Ping</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-ping')">상태 조회 / PONG 상태 응답</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">state, init_state, current_ms, total_ms</span></td></tr>
+    <tr class="summary-break"><td rowspan="1" style="color:var(--doc-text-warning);font-weight:500">상태 조회</td><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-ping-detail')">CMD_PING / CMD_PONG</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-ping')">App_Ping</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-ping')">상태 조회 / PONG 상태 응답</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">state, init_state, current_ms, total_ms, power_status</span></td></tr>
     <tr class="summary-break"><td rowspan="1" style="color:var(--doc-text-warning);font-weight:500">이벤트</td><td>—</td><td>—</td><td>센서 감지 이벤트</td><td><span class="badge b-evt">MCU→PC</span></td><td><span class="mono">Log/SENSOR.TXT</span></td></tr>
     <tr class="summary-break"><td rowspan="7" style="color:var(--doc-text-success);font-weight:500">설정 R/W</td><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-verify-file-detail')">CMD_VERIFY_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">DI_ID 읽기/쓰기</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">Setting/DI_ID.TXT</span></td></tr>
     <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-verify-file-detail')">CMD_VERIFY_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">반복재생 설정 (MT_RP)</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">Setting/MT_RP.TXT</span></td></tr>
@@ -1444,7 +1445,7 @@ bool App_VerifyFile(const char *path, const char *content, bool *out_match)
     <tr class="summary-break"><td rowspan="2" style="color:var(--doc-text-secondary);font-weight:500">Midi 설정</td><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-verify-file-detail')">CMD_VERIFY_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">모터 Midi 파라미터</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">Midi/motor/{id}.ini</span></td></tr>
     <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button> / <button type="button" class="command-app-link" onclick="openCommandDoc('commands-verify-file-detail')">CMD_VERIFY_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button> / <button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-verify-file')">App_VerifyFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">Midi 페이지 설정</button></td><td><span class="badge b-rw">양방향</span></td><td><span class="mono">Midi/page/data.ini</span></td></tr>
     <tr class="summary-break"><td rowspan="5" style="color:var(--doc-text-tertiary);font-weight:500">시스템</td><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-ping-detail')">CMD_PING</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-ping')">App_Ping</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-ping')">장치 발견 / Ping</button></td><td><span class="badge b-cmd">PC→MCU</span></td><td><span class="mono">Setting/DI_ID.TXT</span></td></tr>
-    <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-ping-detail')">CMD_PONG</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-ping')">App_Ping</button></td><td>상태 응답 (PONG)</td><td><span class="badge b-rsp">MCU→PC</span></td><td><span class="mono">state, init_state, current_ms, total_ms</span></td></tr>
+    <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-ping-detail')">CMD_PONG</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-ping')">App_Ping</button></td><td>상태 응답 (PONG)</td><td><span class="badge b-rsp">MCU→PC</span></td><td><span class="mono">state, init_state, current_ms, total_ms, power_status</span></td></tr>
     <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-save-file-detail')">CMD_SAVE_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-save-file')">App_SaveFile</button></td><td>MCU 리셋 명령</td><td><span class="badge b-cmd">PC→MCU</span></td><td><span class="mono">Setting/RE_TI.TXT</span></td></tr>
     <tr><td>—</td><td>—</td><td>에러 알림</td><td><span class="badge b-evt">MCU→PC</span></td><td><span class="mono">Log/</span></td></tr>
     <tr><td><button type="button" class="command-app-link" onclick="openCommandDoc('commands-get-file-detail')">CMD_GET_FILE</button></td><td><button type="button" class="command-app-link" onclick="openFunctionDoc('functions-app-get-file')">App_GetFile</button></td><td><button type="button" class="table-link" onclick="openFunctionDoc('functions-app-get-file')">로그 읽기</button></td><td><span class="badge b-cmd">PC→MCU</span></td><td><span class="mono">Log/BOOT, SENSOR</span></td></tr>
