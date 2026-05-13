@@ -56,6 +56,7 @@ typedef enum {
     CMD_PONG            = 0x02,
     CMD_MOVE            = 0x03,
     CMD_MOTION_CTRL     = 0x04,
+    CMD_POWER_CTRL      = 0x05,
     CMD_GET_MOTORS      = 0x10,
     CMD_GET_MOTOR_STATE = 0x11,
     CMD_GET_FILES       = 0x20,
@@ -84,6 +85,16 @@ typedef enum {
     MOTION_ACTION_PAUSE = 0x02,
     MOTION_ACTION_SEEK  = 0x03
 } MotionAction;
+
+/* ============================================================================
+ * PowerAction Enum  (action field in CMD_POWER_CTRL payload, uint8)
+ * ============================================================================ */
+
+typedef enum {
+    POWER_ACTION_OFF    = 0x00,
+    POWER_ACTION_ON     = 0x01,
+    POWER_ACTION_REBOOT = 0x02
+} PowerAction;
 
 /* ============================================================================
  * Error Code Enum  (error_code field in CMD_ERROR payload, uint8)
@@ -215,4 +226,3 @@ uint16_t BIN_COM_Send(BinaryContext *ctx, const uint8_t *data, uint32_t len,
 bool BIN_COM_IsTxBusy(BinaryContext *ctx);
 
 #endif /* INC_BINARY_COM_H_ */
-

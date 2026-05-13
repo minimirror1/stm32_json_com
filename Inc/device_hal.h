@@ -266,6 +266,13 @@ bool App_MotionPause(uint8_t device_id);
 bool App_MotionSeek(uint8_t device_id, uint32_t time_ms);
 
 /**
+ * @brief Control relay-backed device power output
+ * @param action Power action: 0x00=OFF, 0x01=ON, 0x02=REBOOT
+ * @return true on accepted/executed action, false on invalid or failed action
+ */
+bool App_PowerControl(uint8_t action);
+
+/**
  * @brief Get file/folder list from storage
  * @param out_files Output array of file info structures
  * @param max_count Maximum number of files to return
