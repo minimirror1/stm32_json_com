@@ -11,6 +11,50 @@ App 레이어 계약, 구현 위치, 검증 방법을 누적 기록합니다.
 - 멀티바이트 값은 little-endian 여부를 명확히 적습니다.
 - mock/weak 구현을 함께 갱신해야 하는 경우 반드시 구현 위치에 남깁니다.
 
+## SW v1.1.8.0 - 2026-05-13
+
+### Summary
+
+Added `CMD_POWER_CTRL` for relay-backed device power control.
+
+### Protocol
+
+- Command: `CMD_POWER_CTRL = 0x05`
+- Request payload length: 1 byte
+- Request payload values:
+  - `0x00`: OFF
+  - `0x01`: ON
+  - `0x02`: REBOOT
+- Success response payload: `[action][accepted]`
+  - `action`: requested action value
+  - `accepted`: `0x01` accepted, `0x00` not accepted
+
+Examples:
+
+```text
+ON     00 02 05 01 00 01
+OFF    00 02 05 01 00 00
+REBOOT 00 02 05 01 00 02
+```
+
+### Device Implementation Notes
+
+Device-side application code must implement `App_PowerControl(uint8_t action)` and map it to the relay GPIO:
+
+- OFF: call `power_output_off()`
+- ON: call `power_output_on()`
+- REBOOT: call `power_output_off()`, wait an internal delay, then call `power_output_on()`
+- Keep the current power state as `0x00 = OFF` or `0x01 = ON`
+- Return that current power state through `App_GetPingStatus().power_status` so the next `CMD_PONG` reflects it
+
+### Changed Files
+
+| File | Change |
+|---|---|
+| `Inc/binary_com.h` | Added `CMD_POWER_CTRL` and `PowerAction` values |
+| `Inc/device_hal.h` | Added `App_PowerControl(uint8_t action)` contract |
+| `Src/binary_com.c` | Added payload validation, command dispatch, and `[action][accepted]` response |
+
 ## v1.1.7.0 - 2026-05-11
 
 ### 요약
