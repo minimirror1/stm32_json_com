@@ -1,4 +1,5 @@
 # STM32 Binary Communication Library
+# >버전 : v1.1.7.1 - 2026-05-12
 
 XBee DigiMesh 기반 바이너리 통신 라이브러리입니다.  
 Fragment Protocol을 사용해 대용량 메시지를 분할 전송합니다.
@@ -17,7 +18,7 @@ Fragment Protocol을 사용해 대용량 메시지를 분할 전송합니다.
 ## 폴더 구조
 
 ```text
-stm32_json_com/
+stm32_xbee_com/
 ├── Inc/
 │   ├── binary_com.h         # Binary 통신 메인 API
 │   ├── uart_queue.h         # UART 큐 드라이버
@@ -43,12 +44,12 @@ stm32_json_com/
 1. Include Paths 추가
 - Project -> Properties -> C/C++ Build -> Settings
 - MCU GCC Compiler -> Include paths
-- 추가: `../Lib/stm32_json_com/Inc`
+- 추가: `../Lib/stm32_xbee_com/Inc`
 
 2. Source Folders 추가
 - Project -> Properties -> C/C++ General -> Paths and Symbols
 - Source Location -> Add Folder
-- 추가: `Lib/stm32_json_com/Src`
+- 추가: `Lib/stm32_xbee_com/Src`
 
 3. MCU 시리즈 정의 확인
 - Project -> Properties -> C/C++ Build -> Settings
@@ -58,15 +59,15 @@ stm32_json_com/
 ### Makefile
 
 ```makefile
-C_INCLUDES += -ILib/stm32_json_com/Inc
+C_INCLUDES += -ILib/stm32_xbee_com/Inc
 
 C_SOURCES += \
-Lib/stm32_json_com/Src/binary_com.c \
-Lib/stm32_json_com/Src/uart_queue.c \
-Lib/stm32_json_com/Src/xbee_api.c \
-Lib/stm32_json_com/Src/fragment_rx.c \
-Lib/stm32_json_com/Src/fragment_tx.c \
-Lib/stm32_json_com/Src/crc16.c
+Lib/stm32_xbee_com/Src/binary_com.c \
+Lib/stm32_xbee_com/Src/uart_queue.c \
+Lib/stm32_xbee_com/Src/xbee_api.c \
+Lib/stm32_xbee_com/Src/fragment_rx.c \
+Lib/stm32_xbee_com/Src/fragment_tx.c \
+Lib/stm32_xbee_com/Src/crc16.c
 
 C_DEFS += -DSTM32F7
 ```
@@ -104,7 +105,7 @@ int main(void) {
 ## Git Submodule
 
 ```bash
-git submodule add <repository_url> Lib/stm32_json_com
+git submodule add <repository_url> Lib/stm32_xbee_com
 git clone --recursive <project_url>
 git submodule update --init --recursive
 ```

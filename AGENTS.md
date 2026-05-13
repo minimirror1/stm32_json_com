@@ -141,7 +141,7 @@ Core/
     ├── device_real.c
     └── device_mock.c
 
-Lib/stm32_json_com/
+Lib/stm32_xbee_com/
 ├── Inc/
 │   └── binary_com.h
 └── Src/

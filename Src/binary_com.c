@@ -40,6 +40,8 @@ static void HandleMove(BinaryContext *ctx, uint8_t src_id,
                        const uint8_t *payload, uint16_t payload_len);
 static void HandleMotionCtrl(BinaryContext *ctx, uint8_t src_id,
                               const uint8_t *payload, uint16_t payload_len);
+static void HandlePowerCtrl(BinaryContext *ctx, uint8_t src_id,
+                            const uint8_t *payload, uint16_t payload_len);
 static void HandleGetMotors(BinaryContext *ctx, uint8_t src_id);
 static void HandleGetMotorState(BinaryContext *ctx, uint8_t src_id);
 static void HandleGetFiles(BinaryContext *ctx, uint8_t src_id);
@@ -606,6 +608,37 @@ static void HandleMotionCtrl(BinaryContext *ctx, uint8_t src_id,
     }
 }
 
+static void HandlePowerCtrl(BinaryContext *ctx, uint8_t src_id,
+                            const uint8_t *payload, uint16_t payload_len)
+{
+    if (payload_len != 1u) {
+        SendErrorResponse(ctx, src_id, (uint8_t)CMD_POWER_CTRL, ERR_INVALID_INPUT, NULL);
+        return;
+    }
+
+    PowerAction action = (PowerAction)payload[0];
+    switch (action) {
+        case POWER_ACTION_OFF:
+        case POWER_ACTION_ON:
+        case POWER_ACTION_REBOOT:
+            break;
+
+        default:
+            SendErrorResponse(ctx, src_id, (uint8_t)CMD_POWER_CTRL,
+                              ERR_INVALID_PARAM, NULL);
+            return;
+    }
+
+    bool accepted = App_PowerControl((uint8_t)action);
+    uint8_t resp[2];
+    uint8_t *p = resp;
+    p = write_u8(p, (uint8_t)action);
+    (void)write_u8(p, accepted ? 0x01u : 0x00u);
+    BinarySendStatus send_status =
+        SendBinaryResponse(ctx, src_id, (uint8_t)CMD_POWER_CTRL, BIN_STATUS_OK, resp, 2u);
+    SendErrorForStatus(ctx, src_id, (uint8_t)CMD_POWER_CTRL, send_status);
+}
+
 static void HandleGetMotors(BinaryContext *ctx, uint8_t src_id)
 {
     /* Static allocation prevents stack overflow (32 × sizeof(AppMotorInfo)) */
@@ -1020,6 +1053,10 @@ static void HandleBinaryPacket(BinaryContext *ctx, const uint8_t *data, uint32_t
             HandleMotionCtrl(ctx, hdr.src_id, payload, hdr.payload_len);
             break;
 
+        case CMD_POWER_CTRL:
+            HandlePowerCtrl(ctx, hdr.src_id, payload, hdr.payload_len);
+            break;
+
         case CMD_GET_MOTORS:
             HandleGetMotors(ctx, hdr.src_id);
             break;
@@ -1193,4 +1230,3 @@ bool BIN_COM_IsTxBusy(BinaryContext *ctx)
 {
     return frag_tx_is_busy(&ctx->frag_tx);
 }
-
